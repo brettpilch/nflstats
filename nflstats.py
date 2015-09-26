@@ -55,9 +55,32 @@ teams = {
 passing_stats = ['passing_cmp', 'passing_att', 'passing_yds', 'passing_tds', 'passing_ints']
 rushing_stats = ['rushing_att', 'rushing_yds', 'rushing_tds']
 all_stats = passing_stats + rushing_stats
-divider = '-' * (len(all_stats) * 2 + 3) * 7
+rate_stats = ['passing_%', 'passing_ypa', 'passing_ypc', 'passing_int%', 'passing_td%', 'rushing_ypa']
+
+def make_rate_stats():
+    for team in teams:
+        for year in teams[team]:
+            for week in teams[team][year]:
+                for side in teams[team][year][week]:
+                    side_stats = teams[team][year][week][side]
+                    if side_stats['passing_cmp'] > 0:
+                        side_stats['passing_%'] = \
+                        round(side_stats['passing_cmp'] / float(side_stats['passing_att']) * 100, 2)
+                        side_stats['passing_ypa'] = \
+                        round(side_stats['passing_yds'] / float(side_stats['passing_att']), 2)
+                        side_stats['passing_ypc'] = \
+                        round(side_stats['passing_yds'] / float(side_stats['passing_cmp']), 2)
+                        side_stats['passing_int%'] = \
+                        round(side_stats['passing_ints'] / float(side_stats['passing_att']) * 100, 2)
+                        side_stats['passing_td%'] = \
+                        round(side_stats['passing_tds'] / float(side_stats['passing_att']) * 100, 2)
+                        side_stats['rushing_ypa'] = \
+                        round(side_stats['rushing_yds'] / float(side_stats['rushing_att']), 2)
 
 def accumulate_stats():
+    """
+    Add all stats from previous weeks to each weekly total and store in the dictionary.
+    """
     for team in teams:
         for year in teams[team]:
             for week in teams[team][year]:
@@ -116,10 +139,15 @@ def get_team_stats(year, week, which_team):
                 add_passing_stats(year, wk, game)
                 add_rushing_stats(year, wk, game)
 
-def print_team_stats(year, week, which_team, cum=False):
+def print_team_stats(year, week, which_team, cum=False, rate=False):
     """
     'Pretty-print' all the collected stats for the selected team(s) and week(s).
     """
+    if rate:
+        which_stats = rate_stats
+    else:
+        which_stats = all_stats
+    divider = '-' * (len(which_stats) * 2 + 3) * 7
     if cum:
         mine = 'OWN_TOTAL'
         theirs = 'OPP_TOTAL'
@@ -136,30 +164,32 @@ def print_team_stats(year, week, which_team, cum=False):
         if len(set(team) & which_team) > 0 or None in which_team:
             print '{year} {team}'.format(year=year, team=team[3])
             print 'week'.rjust(6),
-            print ' '.join([(stat[0] + stat[7:]).rjust(6) for stat in all_stats]),
+            print ' '.join([(stat[0] + stat[7:]).rjust(6) for stat in which_stats]),
             print 'score'.rjust(6),
             print 'OPP'.rjust(6),
-            print ' '.join([(stat[0] + stat[7:]).rjust(6) for stat in all_stats])
+            print ' '.join([(stat[0] + stat[7:]).rjust(6) for stat in which_stats])
             print divider
             for wk in week:
                 print str(wk).rjust(6),
                 own_stats = teams[team[0]][year][wk][mine]
                 opp_stats = teams[team[0]][year][wk][theirs]
-                print ' '.join([str(own_stats[key]).rjust(6) for key in all_stats]),
+                print ' '.join([str(own_stats[key]).rjust(6) for key in which_stats]),
                 print '{own}-{opp}'.format(own=own_stats['pts'], opp=opp_stats['pts']).rjust(6),
                 print '{opp}'.format(opp=own_stats['OPP']).rjust(6),
-                print ' '.join([str(opp_stats[key]).rjust(6) for key in all_stats])
+                print ' '.join([str(opp_stats[key]).rjust(6) for key in which_stats])
             print divider
             print ''
 
-def run(year, week, which_team, cum=False):
+def run(year, week, which_team, cum=False, rate=False):
     """
     Collect and print the stats for the selected team(s) and week(s)
     """
     get_team_stats(year, week, which_team)
     if cum:
         accumulate_stats()
-    print_team_stats(year, week, which_team, cum)
+    if rate:
+        make_rate_stats()
+    print_team_stats(year, week, which_team, cum, rate)
 
 def parse_seq(arg_str, integer=True):
     """
@@ -195,8 +225,8 @@ if __name__ == '__main__':
     parser.add_argument("-w", "--week", help="Which week(s)? Use '1-5,7,...' for multiple weeks. Omit to include all weeks.")
     parser.add_argument("-t", "--team", help="Which team(s)? Use 'IND,NE,...' for multiple teams. Omit to include all teams.")
     parser.add_argument("-c", "--cum", help="Flag to show cumulative stats instead of single-game stats.", action='store_true')
+    parser.add_argument("-r", "--rate", help="Flag to show rate stats instead of gross stats.", action='store_true')
     args = parser.parse_args()
-    year = args.year
     week = parse_seq(args.week)
     team = parse_seq(args.team, False)
-    run(year, week, team, args.cum)
+    run(args.year, week, team, args.cum, args.rate)
