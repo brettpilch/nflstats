@@ -58,6 +58,9 @@ all_stats = passing_stats + rushing_stats
 rate_stats = ['passing_cmp%', 'passing_ypa', 'passing_ypc', 'passing_int%', 'passing_td%', 'rushing_ypa']
 
 def make_rate_stats(cum=False):
+    """
+    Use the accumulated stats to make rate stats like yards/carry, yards/attempt, completion %, etc.
+    """
     for team in teams:
         for year in teams[team]:
             weeks = 0
