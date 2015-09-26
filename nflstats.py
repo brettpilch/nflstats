@@ -8,18 +8,40 @@ optional week and team arguments to only show certain weeks or teams. The result
 is a display of standard passing and rushing stats along with the opponent's stats
 and the score for each game.
 
-Dependencies:
+-----------------------------------------------------------------------------------------
+
+DEPENDENCIES:
     python 2.7
     nflgame (pip install nflgame) or (https://github.com/BurntSushi/nflgame)
 
-usage: nflstats.py [-h] [-w WEEK] [-t TEAM]
-                   {2009,2010,2011,2012,2013,2014,2015}
+------------------------------------------------------------------------------------------
+
+COMMAND-LINE DOCUMENTATION:
+usage: nflstats.py [-h] [-w WEEK] [-t TEAM] [-c] [-r] {2009,2010,2011,2012,2013,2014,2015}
+
+display NFL team stats for a given season, teams, and weeks
+
+positional arguments:
+  {2009,2010,2011,2012,2013,2014,2015}
+                        which year do you want stats from?
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -w WEEK, --week WEEK  Which week(s)? Use '1-5,7,...' for multiple weeks.
+                        Omit to include all weeks.
+  -t TEAM, --team TEAM  Which team(s)? Use 'IND,NE,...' for multiple teams.
+                        Omit to include all teams.
+  -c, --cum             Flag to show cumulative stats instead of single-game
+                        stats.
+  -r, --rate            Flag to show rate stats instead of gross stats.
 
 (The only required argument is the year, which must be between 2009 and 2015.)
 
-Command-line example calls:
+------------------------------------------------------------------------------------------
+
+COMMAND-LINE EXAMPLES:
 $ python -h
-    -- displays the help file, documentation for the command-line arguments.
+    -- displays the help file (documentation for the command-line arguments).
 
 $ python nflstats.py 2014
     -- displays all the weekly stats for every team for every week of the 2014 season.
@@ -233,7 +255,7 @@ def parse_seq(arg_str, integer=True):
 
 if __name__ == '__main__':
     import argparse
-    parser = argparse.ArgumentParser(description="display NFL team stats for a given season and weeks")
+    parser = argparse.ArgumentParser(description="display NFL team stats for a given season, teams and weeks")
     parser.add_argument("year", help="which year do you want stats from?", type=int, choices=list(range(2009, 2016)))
     parser.add_argument("-w", "--week", help="Which week(s)? Use '1-5,7,...' for multiple weeks. Omit to include all weeks.")
     parser.add_argument("-t", "--team", help="Which team(s)? Use 'IND,NE,...' for multiple teams. Omit to include all teams.")
