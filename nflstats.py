@@ -1,4 +1,4 @@
-#!usr/local/bin/python
+#!/usr/local/bin/python
 
 """
 Query the NFL.com database to get weekly team-level stats for a given team(s)
