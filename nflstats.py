@@ -55,16 +55,23 @@ teams = {
 passing_stats = ['passing_cmp', 'passing_att', 'passing_yds', 'passing_tds', 'passing_ints']
 rushing_stats = ['rushing_att', 'rushing_yds', 'rushing_tds']
 all_stats = passing_stats + rushing_stats
-rate_stats = ['passing_%', 'passing_ypa', 'passing_ypc', 'passing_int%', 'passing_td%', 'rushing_ypa']
+rate_stats = ['passing_cmp%', 'passing_ypa', 'passing_ypc', 'passing_int%', 'passing_td%', 'rushing_ypa']
 
-def make_rate_stats():
+def make_rate_stats(cum=False):
     for team in teams:
         for year in teams[team]:
+            weeks = 0
             for week in teams[team][year]:
+                weeks += 1
+                if cum:
+                    own = teams[team][year][week]['OWN_TOTAL']
+                    opp = teams[team][year][week]['OPP_TOTAL']
+                    for side in [own, opp]:
+                        side['ppg'] = round(side['pts'] / float(weeks), 2)
                 for side in teams[team][year][week]:
                     side_stats = teams[team][year][week][side]
                     if side_stats['passing_cmp'] > 0:
-                        side_stats['passing_%'] = \
+                        side_stats['passing_cmp%'] = \
                         round(side_stats['passing_cmp'] / float(side_stats['passing_att']) * 100, 2)
                         side_stats['passing_ypa'] = \
                         round(side_stats['passing_yds'] / float(side_stats['passing_att']), 2)
@@ -147,7 +154,7 @@ def print_team_stats(year, week, which_team, cum=False, rate=False):
         which_stats = rate_stats
     else:
         which_stats = all_stats
-    divider = '-' * (len(which_stats) * 2 + 3) * 7
+    divider = '-' * (len(which_stats) * 2 + 4) * 7
     if cum:
         mine = 'OWN_TOTAL'
         theirs = 'OPP_TOTAL'
@@ -165,7 +172,7 @@ def print_team_stats(year, week, which_team, cum=False, rate=False):
             print '{year} {team}'.format(year=year, team=team[3])
             print 'week'.rjust(6),
             print ' '.join([(stat[0] + stat[7:]).rjust(6) for stat in which_stats]),
-            print 'score'.rjust(6),
+            print 'Pts'.rjust(6), 'oPts'.rjust(6),
             print 'OPP'.rjust(6),
             print ' '.join([(stat[0] + stat[7:]).rjust(6) for stat in which_stats])
             print divider
@@ -174,8 +181,11 @@ def print_team_stats(year, week, which_team, cum=False, rate=False):
                 own_stats = teams[team[0]][year][wk][mine]
                 opp_stats = teams[team[0]][year][wk][theirs]
                 print ' '.join([str(own_stats[key]).rjust(6) for key in which_stats]),
-                print '{own}-{opp}'.format(own=own_stats['pts'], opp=opp_stats['pts']).rjust(6),
-                print '{opp}'.format(opp=own_stats['OPP']).rjust(6),
+                if rate and cum:
+                    print str(own_stats['ppg']).rjust(6), str(opp_stats['ppg']).rjust(6),
+                else:
+                    print str(own_stats['pts']).rjust(6), str(opp_stats['pts']).rjust(6),
+                print str(own_stats['OPP']).rjust(6),
                 print ' '.join([str(opp_stats[key]).rjust(6) for key in which_stats])
             print divider
             print ''
@@ -188,7 +198,7 @@ def run(year, week, which_team, cum=False, rate=False):
     if cum:
         accumulate_stats()
     if rate:
-        make_rate_stats()
+        make_rate_stats(cum)
     print_team_stats(year, week, which_team, cum, rate)
 
 def parse_seq(arg_str, integer=True):
