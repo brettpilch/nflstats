@@ -45,7 +45,9 @@ teams = {
                    year: {
                           week: {
                                  'OWN': defaultdict(lambda: 0),
-                                 'OPP': defaultdict(lambda: 0)
+                                 'OPP': defaultdict(lambda: 0),
+                                 'OWN_TOTAL': defaultdict(lambda: 0),
+                                 'OPP_TOTAL': defaultdict(lambda: 0)
                                 } for week in range(1, 18)
                          } for year in range(2000, 2016)
                   } for team in ng.teams
@@ -54,6 +56,20 @@ passing_stats = ['passing_cmp', 'passing_att', 'passing_yds', 'passing_tds', 'pa
 rushing_stats = ['rushing_att', 'rushing_yds', 'rushing_tds']
 all_stats = passing_stats + rushing_stats
 divider = '-' * (len(all_stats) * 2 + 3) * 7
+
+def accumulate_stats():
+    for team in teams:
+        for year in teams[team]:
+            for week in teams[team][year]:
+                for stat in all_stats + ['pts']:
+                    if week - 1 in teams[team][year]:
+                        teams[team][year][week]['OWN_TOTAL'][stat] = \
+                        teams[team][year][week - 1]['OWN_TOTAL'][stat] + teams[team][year][week]['OWN'][stat]
+                        teams[team][year][week]['OPP_TOTAL'][stat] = \
+                        teams[team][year][week - 1]['OPP_TOTAL'][stat] + teams[team][year][week]['OPP'][stat]
+                    else:
+                        teams[team][year][week]['OWN_TOTAL'][stat] = teams[team][year][week]['OWN'][stat]
+                        teams[team][year][week]['OPP_TOTAL'][stat] = teams[team][year][week]['OPP'][stat]
 
 def add_rushing_stats(year, week, game):
     """
@@ -94,14 +110,22 @@ def get_team_stats(year, week, which_team):
             teams[game.home][year][wk]['OPP']['pts'] = game.score_away
             teams[game.away][year][wk]['OWN']['pts'] = game.score_away
             teams[game.away][year][wk]['OPP']['pts'] = game.score_home
+            teams[game.home][year][wk]['OWN_TOTAL']['OPP'] = game.away
+            teams[game.away][year][wk]['OWN_TOTAL']['OPP'] = '@ ' + game.home
             if which_team is None or len(set(which_team) & set([game.home, game.away])) > 0:
                 add_passing_stats(year, wk, game)
                 add_rushing_stats(year, wk, game)
 
-def print_team_stats(year, week, which_team):
+def print_team_stats(year, week, which_team, cum=False):
     """
     'Pretty-print' all the collected stats for the selected team(s) and week(s).
     """
+    if cum:
+        mine = 'OWN_TOTAL'
+        theirs = 'OPP_TOTAL'
+    else:
+        mine = 'OWN'
+        theirs = 'OPP'
     if isinstance(which_team, list):
         which_team = set(which_team)
     else:
@@ -119,8 +143,8 @@ def print_team_stats(year, week, which_team):
             print divider
             for wk in week:
                 print str(wk).rjust(6),
-                own_stats = teams[team[0]][year][wk]['OWN']
-                opp_stats = teams[team[0]][year][wk]['OPP']
+                own_stats = teams[team[0]][year][wk][mine]
+                opp_stats = teams[team[0]][year][wk][theirs]
                 print ' '.join([str(own_stats[key]).rjust(6) for key in all_stats]),
                 print '{own}-{opp}'.format(own=own_stats['pts'], opp=opp_stats['pts']).rjust(6),
                 print '{opp}'.format(opp=own_stats['OPP']).rjust(6),
@@ -128,12 +152,14 @@ def print_team_stats(year, week, which_team):
             print divider
             print ''
 
-def run(year, week, which_team):
+def run(year, week, which_team, cum=False):
     """
     Collect and print the stats for the selected team(s) and week(s)
     """
     get_team_stats(year, week, which_team)
-    print_team_stats(year, week, which_team)
+    if cum:
+        accumulate_stats()
+    print_team_stats(year, week, which_team, cum)
 
 def parse_seq(arg_str, integer=True):
     """
@@ -164,12 +190,13 @@ def parse_seq(arg_str, integer=True):
 
 if __name__ == '__main__':
     import argparse
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="display NFL team stats for a given season and weeks")
     parser.add_argument("year", help="which year do you want stats from?", type=int, choices=list(range(2009, 2016)))
     parser.add_argument("-w", "--week", help="Which week(s)? Use '1-5,7,...' for multiple weeks. Omit to include all weeks.")
     parser.add_argument("-t", "--team", help="Which team(s)? Use 'IND,NE,...' for multiple teams. Omit to include all teams.")
+    parser.add_argument("-c", "--cum", help="Flag to show cumulative stats instead of single-game stats.", action='store_true')
     args = parser.parse_args()
     year = args.year
     week = parse_seq(args.week)
     team = parse_seq(args.team, False)
-    run(year, week, team)
+    run(year, week, team, args.cum)
