@@ -87,12 +87,14 @@ def make_rate_stats(cum=False):
         for year in teams[team]:
             weeks = 0
             for week in teams[team][year]:
-                weeks += 1
+                if teams[team][year][week]['OWN']['OPP']:
+                    weeks += 1
                 if cum:
                     own = teams[team][year][week]['OWN_TOTAL']
                     opp = teams[team][year][week]['OPP_TOTAL']
                     for side in [own, opp]:
-                        side['ppg'] = round(side['pts'] / float(weeks), 2)
+                        if weeks:
+                            side['ppg'] = round(side['pts'] / float(weeks), 2)
                 for side in teams[team][year][week]:
                     side_stats = teams[team][year][week][side]
                     if side_stats['passing_cmp'] > 0:
