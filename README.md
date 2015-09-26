@@ -22,20 +22,11 @@ display NFL team stats for a given season, teams, and weeks
 - which year do you want stats from?
 
 ### optional arguments  
-  -h, --help  
-- show this help message and exit  
-  -w WEEK, --week WEEK
-- Which week(s) do you want to include?    
-- Use '1-5,7,...' for multiple weeks.  
-- Omit this argument to include all weeks.  
-  -t TEAM, --team TEAM  
-- Which team(s) do you want to include?  
-- Use 'IND,NE,...' for multiple teams.  
-- Omit this argument to include all teams.  
-  -c, --cum  
-- Flag to show cumulative stats instead of single-game stats.  
-  -r, --rate  
-- Flag to show rate stats instead of gross stats.  
+  *-h, --help*  show this help message and exit  
+  *-w WEEK, --week WEEK*  Which week(s) do you want to include? Use '1-5,7,...' for multiple weeks. Omit to include all weeks.  
+  *-t TEAM, --team TEAM*  Which team(s) do you want to include? Use 'IND,NE,...' for multiple teams. Omit to include all teams.  
+  *-c, --cum*  Flag to show cumulative stats instead of single-game stats.  
+  *-r, --rate*  Flag to show rate stats instead of gross stats.  
 
 (The only required argument is the year, which must be between 2009 and 2015.)  
 
