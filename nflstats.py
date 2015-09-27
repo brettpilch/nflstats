@@ -68,19 +68,25 @@ ALL_STATS = PASSING_STATS + RUSHING_STATS
 RATE_STATS = ['passing_cmp%', 'passing_ypa', 'passing_ypc', 'passing_int%', 'passing_td%', 'rushing_ypa']
 
 class League:
-    def __init__(self, year, week, which_team, cum, rate):
-        self.teams = self.structure(year, week, which_team)
+    """
+    A class that collects data using the nflgame API, then uses it to get cumulative and rate stats.
+    """
+    def batch_init(self, year, week, which_team, cum=False, rate=False):
         self.year = year
         self.week = week
         self.which_team = which_team
         self.cum = cum
         self.rate = rate
+        self.teams = self.structure()
 
-    def structure(self, year, week, which_team):
+    def structure(self):
+        """
+        Creates a nested dictionary data structure to hold the data.
+        """
         teams = {team[0]: dict() for team in ng.teams}
         for team, teamdict in teams.items():
-            yeardict = teamdict[year] = dict()
-            for wk in week:
+            yeardict = teamdict[self.year] = dict()
+            for wk in self.week:
                 weekdict = yeardict[wk] = dict()
                 for side in ['OWN', 'OPP', 'OWN_TOTAL', 'OPP_TOTAL']:
                     sidedict = weekdict[side] = defaultdict(lambda: 0)
@@ -176,9 +182,9 @@ class League:
                     self.add_passing_stats(wk, game)
                     self.add_rushing_stats(wk, game)
 
-    def print_team_stats(self):
+    def __repr__(self):
         """
-        'Pretty-print' all the collected stats for the selected team(s) and week(s).
+        Display stats in a nice-looking table.
         """
         if self.rate:
             which_stats = RATE_STATS
@@ -195,30 +201,41 @@ class League:
             self.which_team = set(self.which_team)
         else:
             self.which_team = set([self.which_team])
+        output = ''
         for team in ng.teams:
             if len(set(team) & self.which_team) > 0 or None in self.which_team:
-                print '{year} {team}'.format(year=self.year, team=team[3])
-                print 'week'.rjust(6),
-                print ' '.join([(stat[0] + stat[7:]).rjust(6) for stat in which_stats]),
-                print 'Pts'.rjust(6), 'oPts'.rjust(6),
-                print 'OPP'.rjust(6),
-                print ' '.join([(stat[0] + stat[7:]).rjust(6) for stat in which_stats])
-                print divider
+                output += '{year} {team}\n'.format(year=self.year, team=team[3])
+                output += 'week'.rjust(6)
+                output += ' '.join([(stat[0] + stat[7:]).rjust(6) for stat in which_stats])
+                output += 'Pts'.rjust(6) + 'oPts'.rjust(6)
+                output += 'OPP'.rjust(6)
+                output += ' '.join([(stat[0] + stat[7:]).rjust(6) for stat in which_stats]) + '\n'
+                output += divider + '\n'
                 for wk in self.week:
-                    print str(wk).rjust(6),
+                    output += str(wk).rjust(6)
                     own_stats = self.teams[team[0]][self.year][wk][mine]
                     opp_stats = self.teams[team[0]][self.year][wk][theirs]
-                    print ' '.join([str(own_stats[key]).rjust(6) for key in which_stats]),
+                    output += ' '.join([str(own_stats[key]).rjust(6) for key in which_stats])
                     if self.rate and self.cum:
-                        print str(own_stats['ppg']).rjust(6), str(opp_stats['ppg']).rjust(6),
+                        output += str(own_stats['ppg']).rjust(6) + str(opp_stats['ppg']).rjust(6)
                     else:
-                        print str(own_stats['pts']).rjust(6), str(opp_stats['pts']).rjust(6),
-                    print str(own_stats['OPP']).rjust(6),
-                    print ' '.join([str(opp_stats[key]).rjust(6) for key in which_stats])
-                print divider
-                print ''
+                        output += str(own_stats['pts']).rjust(6) + str(opp_stats['pts']).rjust(6)
+                    output += str(own_stats['OPP']).rjust(6)
+                    output += ' '.join([str(opp_stats[key]).rjust(6) for key in which_stats]) + '\n'
+                output += divider + '\n'
+        return output
+
+    def compile(self):
+        self.make_team_stats()
+        if self.cum:
+            self.accumulate_stats()
+        if self.rate:
+            self.make_rate_stats()
 
 def weeklist(weekinput):
+    """
+    If week is None, return a list of all weeks.
+    """
     if weekinput is None:
         return list(range(1, 18))
     elif len(weekinput) == 1:
@@ -230,13 +247,10 @@ def run(year, week, which_team, cum=False, rate=False):
     """
     Collect and print the stats for the selected team(s) and week(s)
     """
-    league = League(year, weeklist(week), which_team, cum, rate)
-    league.make_team_stats()
-    if cum:
-        league.accumulate_stats()
-    if rate:
-        league.make_rate_stats()
-    league.print_team_stats()
+    league = League()
+    league.batch_init(year, weeklist(week), which_team, cum, rate)
+    league.compile()
+    print(league)
 
 def parse_seq(arg_str, integer=True):
     """
