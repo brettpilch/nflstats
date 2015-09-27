@@ -206,7 +206,7 @@ class League:
             if len(set(team) & self.which_team) > 0 or None in self.which_team:
                 output += '{year} {team}\n'.format(year=self.year, team=team[3])
                 output += 'week'.rjust(6)
-                output += ' '.join([(stat[0] + stat[7:]).rjust(6) for stat in which_stats])
+                output += ' ' + ' '.join([(stat[0] + stat[7:]).rjust(6) for stat in which_stats])
                 output += 'Pts'.rjust(6) + 'oPts'.rjust(6)
                 output += 'OPP'.rjust(6)
                 output += ' '.join([(stat[0] + stat[7:]).rjust(6) for stat in which_stats]) + '\n'
@@ -215,7 +215,7 @@ class League:
                     output += str(wk).rjust(6)
                     own_stats = self.teams[team[0]][self.year][wk][mine]
                     opp_stats = self.teams[team[0]][self.year][wk][theirs]
-                    output += ' '.join([str(own_stats[key]).rjust(6) for key in which_stats])
+                    output += ' ' + ' '.join([str(own_stats[key]).rjust(6) for key in which_stats])
                     if self.rate and self.cum:
                         output += str(own_stats['ppg']).rjust(6) + str(opp_stats['ppg']).rjust(6)
                     else:
@@ -236,9 +236,9 @@ def weeklist(weekinput):
     """
     If week is None, return a list of all weeks.
     """
-    if weekinput is None:
+    if not weekinput:
         return list(range(1, 18))
-    elif len(weekinput) == 1:
+    elif isinstance(weekinput, int):
         return [weekinput]
     else:
         return weekinput
