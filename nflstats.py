@@ -62,171 +62,181 @@ $ python nflstats.py 2011 -t TB,NYG,CAR
 import nflgame as ng
 from collections import defaultdict
 
-teams = {
-         team[0]: {
-                   year: {
-                          week: {
-                                 'OWN': defaultdict(lambda: 0),
-                                 'OPP': defaultdict(lambda: 0),
-                                 'OWN_TOTAL': defaultdict(lambda: 0),
-                                 'OPP_TOTAL': defaultdict(lambda: 0)
-                                } for week in range(1, 18)
-                         } for year in range(2000, 2016)
-                  } for team in ng.teams
-        }
-passing_stats = ['passing_cmp', 'passing_att', 'passing_yds', 'passing_tds', 'passing_ints']
-rushing_stats = ['rushing_att', 'rushing_yds', 'rushing_tds']
-all_stats = passing_stats + rushing_stats
-rate_stats = ['passing_cmp%', 'passing_ypa', 'passing_ypc', 'passing_int%', 'passing_td%', 'rushing_ypa']
+PASSING_STATS = ['passing_cmp', 'passing_att', 'passing_yds', 'passing_tds', 'passing_ints']
+RUSHING_STATS = ['rushing_att', 'rushing_yds', 'rushing_tds']
+ALL_STATS = PASSING_STATS + RUSHING_STATS
+RATE_STATS = ['passing_cmp%', 'passing_ypa', 'passing_ypc', 'passing_int%', 'passing_td%', 'rushing_ypa']
 
-def make_rate_stats(cum=False):
-    """
-    Use the accumulated stats to make rate stats like yards/carry, yards/attempt, completion %, etc.
-    """
-    for team in teams:
-        for year in teams[team]:
-            weeks = 0
-            for week in teams[team][year]:
-                if teams[team][year][week]['OWN']['OPP']:
-                    weeks += 1
-                if cum:
-                    own = teams[team][year][week]['OWN_TOTAL']
-                    opp = teams[team][year][week]['OPP_TOTAL']
-                    for side in [own, opp]:
-                        if weeks:
-                            side['ppg'] = round(side['pts'] / float(weeks), 2)
-                for side in teams[team][year][week]:
-                    side_stats = teams[team][year][week][side]
-                    if side_stats['passing_cmp'] > 0:
-                        side_stats['passing_cmp%'] = \
-                        round(side_stats['passing_cmp'] / float(side_stats['passing_att']) * 100, 2)
-                        side_stats['passing_ypa'] = \
-                        round(side_stats['passing_yds'] / float(side_stats['passing_att']), 2)
-                        side_stats['passing_ypc'] = \
-                        round(side_stats['passing_yds'] / float(side_stats['passing_cmp']), 2)
-                        side_stats['passing_int%'] = \
-                        round(side_stats['passing_ints'] / float(side_stats['passing_att']) * 100, 2)
-                        side_stats['passing_td%'] = \
-                        round(side_stats['passing_tds'] / float(side_stats['passing_att']) * 100, 2)
-                        side_stats['rushing_ypa'] = \
-                        round(side_stats['rushing_yds'] / float(side_stats['rushing_att']), 2)
+class League:
+    def __init__(self, year, week, which_team, cum, rate):
+        self.teams = self.structure(year, week, which_team)
+        self.year = year
+        self.week = week
+        self.which_team = which_team
+        self.cum = cum
+        self.rate = rate
 
-def accumulate_stats():
-    """
-    Add all stats from previous weeks to each weekly total and store in the dictionary.
-    """
-    for team in teams:
-        for year in teams[team]:
-            for week in teams[team][year]:
-                for stat in all_stats + ['pts']:
-                    if week - 1 in teams[team][year]:
-                        teams[team][year][week]['OWN_TOTAL'][stat] = \
-                        teams[team][year][week - 1]['OWN_TOTAL'][stat] + teams[team][year][week]['OWN'][stat]
-                        teams[team][year][week]['OPP_TOTAL'][stat] = \
-                        teams[team][year][week - 1]['OPP_TOTAL'][stat] + teams[team][year][week]['OPP'][stat]
-                    else:
-                        teams[team][year][week]['OWN_TOTAL'][stat] = teams[team][year][week]['OWN'][stat]
-                        teams[team][year][week]['OPP_TOTAL'][stat] = teams[team][year][week]['OPP'][stat]
-
-def add_rushing_stats(year, week, game):
-    """
-    Collect all rushing stats from a certain game.
-    """
-    rushing = game.players.rushing()
-    for player in rushing:
-        team = player.team
-        opp = game.away if game.home == team else game.home
-        for stat in rushing_stats:
-            teams[team][year][week]['OWN'][stat] += player.__dict__[stat]
-            teams[opp][year][week]['OPP'][stat] += player.__dict__[stat]
-
-def add_passing_stats(year, week, game):
-    """
-    Collect all passing stats from a certain game.
-    """
-    passing = game.players.passing()
-    for player in passing:
-        team = player.team
-        opp = game.away if game.home == team else game.home
-        for stat in passing_stats:
-            teams[team][year][week]['OWN'][stat] += player.__dict__[stat]
-            teams[opp][year][week]['OPP'][stat] += player.__dict__[stat]
-
-def get_team_stats(year, week, which_team):
-    """
-    Collect all stats for a given year, week(s), team(s).
-    """
-    if week is None:
-        week = list(range(1, 18))
-    for wk in week:
-        games = ng.games(year, wk)
-        for game in games:
-            teams[game.home][year][wk]['OWN']['OPP'] = game.away
-            teams[game.away][year][wk]['OWN']['OPP'] = '@ ' + game.home
-            teams[game.home][year][wk]['OWN']['pts'] = game.score_home
-            teams[game.home][year][wk]['OPP']['pts'] = game.score_away
-            teams[game.away][year][wk]['OWN']['pts'] = game.score_away
-            teams[game.away][year][wk]['OPP']['pts'] = game.score_home
-            teams[game.home][year][wk]['OWN_TOTAL']['OPP'] = game.away
-            teams[game.away][year][wk]['OWN_TOTAL']['OPP'] = '@ ' + game.home
-            if which_team is None or len(set(which_team) & set([game.home, game.away])) > 0:
-                add_passing_stats(year, wk, game)
-                add_rushing_stats(year, wk, game)
-
-def print_team_stats(year, week, which_team, cum=False, rate=False):
-    """
-    'Pretty-print' all the collected stats for the selected team(s) and week(s).
-    """
-    if rate:
-        which_stats = rate_stats
-    else:
-        which_stats = all_stats
-    divider = '-' * (len(which_stats) * 2 + 4) * 7
-    if cum:
-        mine = 'OWN_TOTAL'
-        theirs = 'OPP_TOTAL'
-    else:
-        mine = 'OWN'
-        theirs = 'OPP'
-    if isinstance(which_team, list):
-        which_team = set(which_team)
-    else:
-        which_team = set([which_team])
-    if week is None:
-        week = list(range(1, 18))
-    for team in ng.teams:
-        if len(set(team) & which_team) > 0 or None in which_team:
-            print '{year} {team}'.format(year=year, team=team[3])
-            print 'week'.rjust(6),
-            print ' '.join([(stat[0] + stat[7:]).rjust(6) for stat in which_stats]),
-            print 'Pts'.rjust(6), 'oPts'.rjust(6),
-            print 'OPP'.rjust(6),
-            print ' '.join([(stat[0] + stat[7:]).rjust(6) for stat in which_stats])
-            print divider
+    def structure(self, year, week, which_team):
+        teams = {team[0]: dict() for team in ng.teams}
+        for team, teamdict in teams.items():
+            yeardict = teamdict[year] = dict()
             for wk in week:
-                print str(wk).rjust(6),
-                own_stats = teams[team[0]][year][wk][mine]
-                opp_stats = teams[team[0]][year][wk][theirs]
-                print ' '.join([str(own_stats[key]).rjust(6) for key in which_stats]),
-                if rate and cum:
-                    print str(own_stats['ppg']).rjust(6), str(opp_stats['ppg']).rjust(6),
-                else:
-                    print str(own_stats['pts']).rjust(6), str(opp_stats['pts']).rjust(6),
-                print str(own_stats['OPP']).rjust(6),
-                print ' '.join([str(opp_stats[key]).rjust(6) for key in which_stats])
-            print divider
-            print ''
+                weekdict = yeardict[wk] = dict()
+                for side in ['OWN', 'OPP', 'OWN_TOTAL', 'OPP_TOTAL']:
+                    sidedict = weekdict[side] = defaultdict(lambda: 0)
+        return teams
+
+    def make_rate_stats(self):
+        """
+        Use the accumulated stats to make rate stats like yards/carry, yards/attempt, completion %, etc.
+        """
+        for team, teamdict in self.teams.items():
+            for year, yeardict in teamdict.items():
+                weeks = 0
+                for week, weekdict in yeardict.items():
+                    if weekdict['OWN']['OPP']:
+                        weeks += 1
+                    if self.cum:
+                        own = weekdict['OWN_TOTAL']
+                        opp = weekdict['OPP_TOTAL']
+                        for side in [own, opp]:
+                            if weeks:
+                                side['ppg'] = round(side['pts'] / float(weeks), 2)
+                    for side, side_stats in weekdict.items():
+                        if side_stats['passing_cmp'] > 0:
+                            side_stats['passing_cmp%'] = \
+                            round(side_stats['passing_cmp'] / float(side_stats['passing_att']) * 100, 2)
+                            side_stats['passing_ypa'] = \
+                            round(side_stats['passing_yds'] / float(side_stats['passing_att']), 2)
+                            side_stats['passing_ypc'] = \
+                            round(side_stats['passing_yds'] / float(side_stats['passing_cmp']), 2)
+                            side_stats['passing_int%'] = \
+                            round(side_stats['passing_ints'] / float(side_stats['passing_att']) * 100, 2)
+                            side_stats['passing_td%'] = \
+                            round(side_stats['passing_tds'] / float(side_stats['passing_att']) * 100, 2)
+                            side_stats['rushing_ypa'] = \
+                            round(side_stats['rushing_yds'] / float(side_stats['rushing_att']), 2)
+
+    def accumulate_stats(self):
+        """
+        Add all stats from previous weeks to each weekly total and store in the dictionary.
+        """
+        for team, teamdict in self.teams.items():
+            for year, yeardict in teamdict.items():
+                for week, thisweek in yeardict.items():
+                    for stat in ALL_STATS + ['pts']:
+                        if week - 1 in yeardict:
+                            lastweek = yeardict[week - 1]
+                            thisweek['OWN_TOTAL'][stat] = lastweek['OWN_TOTAL'][stat] + thisweek['OWN'][stat]
+                            thisweek['OPP_TOTAL'][stat] = lastweek['OPP_TOTAL'][stat] + thisweek['OPP'][stat]
+                        else:
+                            thisweek['OWN_TOTAL'][stat] = thisweek['OWN'][stat]
+                            thisweek['OPP_TOTAL'][stat] = thisweek['OPP'][stat]
+
+    def add_rushing_stats(self, week, game):
+        """
+        Collect all rushing stats from a certain game.
+        """
+        rushing = game.players.rushing()
+        for player in rushing:
+            team = player.team
+            opp = game.away if game.home == team else game.home
+            for stat in RUSHING_STATS:
+                self.teams[team][self.year][week]['OWN'][stat] += player.__dict__[stat]
+                self.teams[opp][self.year][week]['OPP'][stat] += player.__dict__[stat]
+
+    def add_passing_stats(self, week, game):
+        """
+        Collect all passing stats from a certain game.
+        """
+        passing = game.players.passing()
+        for player in passing:
+            team = player.team
+            opp = game.away if game.home == team else game.home
+            for stat in PASSING_STATS:
+                self.teams[team][self.year][week]['OWN'][stat] += player.__dict__[stat]
+                self.teams[opp][self.year][week]['OPP'][stat] += player.__dict__[stat]
+
+    def make_team_stats(self):
+        """
+        Collect all stats for a given year, week(s), team(s).
+        """
+        for wk in self.week:
+            games = ng.games(self.year, wk)
+            for game in games:
+                self.teams[game.home][self.year][wk]['OWN']['OPP'] = game.away
+                self.teams[game.away][self.year][wk]['OWN']['OPP'] = '@ ' + game.home
+                self.teams[game.home][self.year][wk]['OWN']['pts'] = game.score_home
+                self.teams[game.home][self.year][wk]['OPP']['pts'] = game.score_away
+                self.teams[game.away][self.year][wk]['OWN']['pts'] = game.score_away
+                self.teams[game.away][self.year][wk]['OPP']['pts'] = game.score_home
+                self.teams[game.home][self.year][wk]['OWN_TOTAL']['OPP'] = game.away
+                self.teams[game.away][self.year][wk]['OWN_TOTAL']['OPP'] = '@ ' + game.home
+                if self.which_team is None or len(set(self.which_team) & set([game.home, game.away])) > 0:
+                    self.add_passing_stats(wk, game)
+                    self.add_rushing_stats(wk, game)
+
+    def print_team_stats(self):
+        """
+        'Pretty-print' all the collected stats for the selected team(s) and week(s).
+        """
+        if self.rate:
+            which_stats = RATE_STATS
+        else:
+            which_stats = ALL_STATS
+        divider = '-' * (len(which_stats) * 2 + 4) * 7
+        if self.cum:
+            mine = 'OWN_TOTAL'
+            theirs = 'OPP_TOTAL'
+        else:
+            mine = 'OWN'
+            theirs = 'OPP'
+        if isinstance(self.which_team, list):
+            self.which_team = set(self.which_team)
+        else:
+            self.which_team = set([self.which_team])
+        for team in ng.teams:
+            if len(set(team) & self.which_team) > 0 or None in self.which_team:
+                print '{year} {team}'.format(year=self.year, team=team[3])
+                print 'week'.rjust(6),
+                print ' '.join([(stat[0] + stat[7:]).rjust(6) for stat in which_stats]),
+                print 'Pts'.rjust(6), 'oPts'.rjust(6),
+                print 'OPP'.rjust(6),
+                print ' '.join([(stat[0] + stat[7:]).rjust(6) for stat in which_stats])
+                print divider
+                for wk in self.week:
+                    print str(wk).rjust(6),
+                    own_stats = self.teams[team[0]][self.year][wk][mine]
+                    opp_stats = self.teams[team[0]][self.year][wk][theirs]
+                    print ' '.join([str(own_stats[key]).rjust(6) for key in which_stats]),
+                    if self.rate and self.cum:
+                        print str(own_stats['ppg']).rjust(6), str(opp_stats['ppg']).rjust(6),
+                    else:
+                        print str(own_stats['pts']).rjust(6), str(opp_stats['pts']).rjust(6),
+                    print str(own_stats['OPP']).rjust(6),
+                    print ' '.join([str(opp_stats[key]).rjust(6) for key in which_stats])
+                print divider
+                print ''
+
+def weeklist(weekinput):
+    if weekinput is None:
+        return list(range(1, 18))
+    elif len(weekinput) == 1:
+        return [weekinput]
+    else:
+        return weekinput
 
 def run(year, week, which_team, cum=False, rate=False):
     """
     Collect and print the stats for the selected team(s) and week(s)
     """
-    get_team_stats(year, week, which_team)
+    league = League(year, weeklist(week), which_team, cum, rate)
+    league.make_team_stats()
     if cum:
-        accumulate_stats()
+        league.accumulate_stats()
     if rate:
-        make_rate_stats(cum)
-    print_team_stats(year, week, which_team, cum, rate)
+        league.make_rate_stats()
+    league.print_team_stats()
 
 def parse_seq(arg_str, integer=True):
     """
