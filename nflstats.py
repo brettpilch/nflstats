@@ -40,7 +40,7 @@ optional arguments:
 ------------------------------------------------------------------------------------------
 
 COMMAND-LINE EXAMPLES:
-$ python -h
+$ python nflstats.py -h
     -- displays the help file (documentation for the command-line arguments).
 
 $ python nflstats.py 2014

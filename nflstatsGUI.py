@@ -1,3 +1,20 @@
+#!/usr/local/bin/python
+
+"""
+Query the NFL.com database to get weekly team-level stats for a given team(s)
+in a given season and week(s). Run this script to open up a GUI interface in
+which you can select a year, team, and weeks to get stats from. The result
+is a display of standard passing and rushing stats along with the opponent's stats
+and the score for each game. Check the 'show cumulative stats' and 'show rate stats'
+buttons to show cumulative and rate stats.
+
+-----------------------------------------------------------------------------------------
+
+DEPENDENCIES:
+    python 2.7
+    nflgame (pip install nflgame) or (https://github.com/BurntSushi/nflgame)
+"""
+
 from nflstats import League, PASSING_STATS, RUSHING_STATS, RATE_STATS, weeklist, parse_seq
 import Tkinter as gui
 import nflgame as ng

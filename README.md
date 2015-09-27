@@ -1,6 +1,6 @@
 # NFL Stats Query
 
-Query the NFL.com database to get weekly team-level stats for a given team(s) in a given season and week(s). Call this script from the command-line with a year argument to get all the weekly stats for every team in that year. Supply optional week and team arguments to only show certain weeks or teams. The result is a display of standard passing and rushing stats along with the opponent's stats and the score for each game. Advanced usage allows you to display cumulative stats and rate stats instead of single-game totals.
+Query the NFL.com database to get weekly team-level stats for a given team(s) in a given season and week(s).
 
 -----------------------------------------------------------------------------
 
@@ -8,6 +8,16 @@ Query the NFL.com database to get weekly team-level stats for a given team(s) in
 
 python 2.7  
 nflgame (pip install nflgame) or [view repo](https://github.com/BurntSushi/nflgame)  
+
+-----------------------------------------------------------------------------
+
+## SCRIPTS
+
+### nflstats.py  
+- Call this script from the command-line with a year argument to get all the weekly stats for every team in that year. Supply optional week and team arguments to only show certain weeks or teams. The result is a display of standard passing and rushing stats along with the opponent's stats and the score for each game. Advanced usage allows you to display cumulative stats and rate stats instead of single-game totals.  
+
+### nflstatsGUI.py  
+- Run this script to open up a GUI interface in which you can select a year, team, and weeks to get stats from. The result is a display of standard passing and rushing stats along with the opponent's stats and the score for each game. Check the 'show cumulative stats' and 'show rate stats' buttons to show cumulative and rate stats.  
 
 -----------------------------------------------------------------------------
 
@@ -32,7 +42,7 @@ display NFL team stats for a given season, teams, and weeks
 -----------------------------------------------------------------------------
 
 ## COMMAND-LINE EXAMPLES:
-$ python -h  
+$ python nflstats.py -h  
 - displays the help file (documentation for the command-line arguments).
 
 $ python nflstats.py 2014  
