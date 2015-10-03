@@ -15,7 +15,7 @@ DEPENDENCIES:
     nflgame (pip install nflgame) or (https://github.com/BurntSushi/nflgame)
 """
 
-from nflstats import League, PASSING_STATS, RUSHING_STATS, RATE_STATS, weeklist, parse_seq
+from nflstats import League, PASSING_STATS, RUSHING_STATS, RATE_STATS, default, parse_seq
 import Tkinter as gui
 import nflgame as ng
 
@@ -23,14 +23,18 @@ ALL_STATS = PASSING_STATS + RUSHING_STATS
 
 def get_results(league, team, year, week, cum, rate, widget):
     if team.get() == "All teams":
-        thisteam = None
+        thisteam = ng.teams
     else:
-        thisteam = [team.get()]
+        thisteam = default(parse_seq(team.get(), False), list(ng.teams))
     if week.get() == "All weeks":
-        thisweek = parse_seq(None)
+        thisweek = default(parse_seq(None), list(range(1, 18)))
     else:
-        thisweek = parse_seq(week.get())
-    league.batch_init(year.get(), weeklist(thisweek), thisteam, cum.get(), rate.get())
+        thisweek = default(parse_seq(week.get()), list(range(1, 18)))
+    if year.get() == "All years":
+        thisyear = default(parse_seq(None), list(range(2009, 2015)))
+    else:
+        thisyear = default(parse_seq(year.get()), list(range(2009, 2015)))
+    league.batch_init(thisyear, thisweek, thisteam, cum.get(), rate.get())
     league.compile()
     widget.delete(1.0, gui.END)
     widget.insert(gui.END, str(league))
@@ -46,17 +50,15 @@ def runGUI():
     display_text.insert(gui.END, "Select parameters below.")
     display_text.pack()
     
-    team_str = gui.StringVar()
-    team_str.set("All teams")
-    teams = ["All teams"] + [team[0] for team in ng.teams]
-    team_drop_down = gui.OptionMenu(app, team_str, *teams)
-    team_drop_down.pack()
+    team_var = gui.StringVar()
+    team_var.set("All teams")
+    team_entry = gui.Entry(app, textvariable = team_var)
+    team_entry.pack()
 
-    year_var = gui.IntVar()
-    year_var.set(2014)
-    years = list(range(2009, 2016))
-    year_drop_down = gui.OptionMenu(app, year_var, *years)
-    year_drop_down.pack()
+    year_var = gui.StringVar()
+    year_var.set("All years")
+    year_entry = gui.Entry(app, textvariable = year_var)
+    year_entry.pack()
 
     week_var = gui.StringVar()
     week_var.set("All weeks")
@@ -72,7 +74,7 @@ def runGUI():
     rate_button.pack()
 
     button1 = gui.Button(app, text = 'Get Stats', width = 40,
-        command = lambda: get_results(league, team_str, year_var, week_var, cum_var, rate_var, display_text))
+        command = lambda: get_results(league, team_var, year_var, week_var, cum_var, rate_var, display_text))
     button1.pack()
 
     app.mainloop()
