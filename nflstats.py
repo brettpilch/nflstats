@@ -74,7 +74,10 @@ class League:
     def batch_init(self, year, week, which_team, cum=False, rate=False):
         self.year = year
         self.week = week
-        self.which_team = which_team
+        if which_team is None:
+            self.which_team = [team[0] for team in ng.teams]
+        else:
+            self.which_team = which_team
         self.cum = cum
         self.rate = rate
         self.teams = self.structure()
@@ -143,25 +146,27 @@ class League:
         """
         Collect all rushing stats from a certain game.
         """
-        rushing = game.players.rushing()
-        for player in rushing:
+        for player in game.players.rushing():
             team = player.team
             opp = game.away if game.home == team else game.home
             for stat in RUSHING_STATS:
-                self.teams[team][self.year][week]['OWN'][stat] += player.__dict__[stat]
-                self.teams[opp][self.year][week]['OPP'][stat] += player.__dict__[stat]
+                if team in self.which_team:
+                    self.teams[team][self.year][week]['OWN'][stat] += player.__dict__[stat]
+                if opp in self.which_team:
+                    self.teams[opp][self.year][week]['OPP'][stat] += player.__dict__[stat]
 
     def add_passing_stats(self, week, game):
         """
         Collect all passing stats from a certain game.
         """
-        passing = game.players.passing()
-        for player in passing:
+        for player in game.players.passing():
             team = player.team
             opp = game.away if game.home == team else game.home
             for stat in PASSING_STATS:
-                self.teams[team][self.year][week]['OWN'][stat] += player.__dict__[stat]
-                self.teams[opp][self.year][week]['OPP'][stat] += player.__dict__[stat]
+                if team in self.which_team:
+                    self.teams[team][self.year][week]['OWN'][stat] += player.__dict__[stat]
+                if opp in self.which_team:
+                    self.teams[opp][self.year][week]['OPP'][stat] += player.__dict__[stat]
 
     def make_team_stats(self):
         """
@@ -170,17 +175,20 @@ class League:
         for wk in self.week:
             games = ng.games(self.year, wk)
             for game in games:
-                self.teams[game.home][self.year][wk]['OWN']['OPP'] = game.away
-                self.teams[game.away][self.year][wk]['OWN']['OPP'] = '@ ' + game.home
-                self.teams[game.home][self.year][wk]['OWN']['pts'] = game.score_home
-                self.teams[game.home][self.year][wk]['OPP']['pts'] = game.score_away
-                self.teams[game.away][self.year][wk]['OWN']['pts'] = game.score_away
-                self.teams[game.away][self.year][wk]['OPP']['pts'] = game.score_home
-                self.teams[game.home][self.year][wk]['OWN_TOTAL']['OPP'] = game.away
-                self.teams[game.away][self.year][wk]['OWN_TOTAL']['OPP'] = '@ ' + game.home
-                if self.which_team is None or len(set(self.which_team) & set([game.home, game.away])) > 0:
-                    self.add_passing_stats(wk, game)
-                    self.add_rushing_stats(wk, game)
+                matchup = {game.home: {'opp': game.away,
+                                       'own_pts': game.score_home,
+                                       'opp_pts': game.score_away},
+                           game.away: {'opp': game.home,
+                                       'own_pts': game.score_away,
+                                       'opp_pts': game.score_home}}
+                for team, teamdict in matchup.items():
+                    if team in self.which_team:
+                        self.teams[team][self.year][wk]['OWN']['OPP'] = teamdict['opp']
+                        self.teams[team][self.year][wk]['OWN']['pts'] = teamdict['own_pts']
+                        self.teams[team][self.year][wk]['OPP']['pts'] = teamdict['opp_pts']
+                        self.teams[team][self.year][wk]['OWN_TOTAL']['OPP'] = teamdict['opp']
+                self.add_passing_stats(wk, game)
+                self.add_rushing_stats(wk, game)
 
     def __repr__(self):
         """
