@@ -64,8 +64,10 @@ from collections import defaultdict
 
 PASSING_STATS = ['passing_cmp', 'passing_att', 'passing_yds', 'passing_tds', 'passing_ints']
 RUSHING_STATS = ['rushing_att', 'rushing_yds', 'rushing_tds']
-ALL_STATS = PASSING_STATS + RUSHING_STATS
-RATE_STATS = ['passing_cmp%', 'passing_ypa', 'passing_ypc', 'passing_int%', 'passing_td%', 'rushing_ypa']
+DEFENSE_STATS = ['defense_sk']
+ALL_STATS = PASSING_STATS + DEFENSE_STATS + RUSHING_STATS
+RATE_STATS = ['passing_cmp%', 'passing_ypa', 'passing_ypc',
+              'passing_int%', 'passing_td%', 'passing_sk%', 'rushing_ypa']
 
 class League:
     """
@@ -123,6 +125,8 @@ class League:
                             round(side_stats['passing_tds'] / float(side_stats['passing_att']) * 100, 2)
                             side_stats['rushing_ypa'] = \
                             round(side_stats['rushing_yds'] / float(side_stats['rushing_att']), 2)
+                            side_stats['passing_sk%'] = \
+                            round(side_stats['defense_sk'] / float(side_stats['defense_sk'] + side_stats['passing_att']) * 100, 2)
 
     def accumulate_stats(self):
         """
@@ -166,6 +170,16 @@ class League:
                 if opp in self.which_team:
                     self.teams[opp][year][week]['OPP'][stat] += player.__dict__[stat]
 
+    def add_defense_stats(self, year, week, game):
+        for player in game.players.defense():
+            team = player.team
+            opp = game.away if game.home == team else game.home
+            for stat in DEFENSE_STATS:
+                if opp in self.which_team:
+                    self.teams[opp][year][week]['OWN'][stat] += int(player.__dict__[stat])
+                if team in self.which_team:
+                    self.teams[team][year][week]['OPP'][stat] += int(player.__dict__[stat])
+
     def make_team_stats(self):
         """
         Collect all stats for a given year, week(s), team(s).
@@ -186,6 +200,7 @@ class League:
                             self.teams[team][yr][wk]['OWN']['pts'] = teamdict['own_pts']
                             self.teams[team][yr][wk]['OPP']['pts'] = teamdict['opp_pts']
                             self.teams[team][yr][wk]['OWN_TOTAL']['OPP'] = teamdict['opp']
+                    self.add_defense_stats(yr, wk, game)
                     self.add_passing_stats(yr, wk, game)
                     self.add_rushing_stats(yr, wk, game)
 
