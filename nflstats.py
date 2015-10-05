@@ -69,6 +69,13 @@ ALL_STATS = PASSING_STATS + DEFENSE_STATS + RUSHING_STATS
 RATE_STATS = ['passing_cmp%', 'passing_ypa', 'passing_ypc',
               'passing_int%', 'passing_td%', 'passing_sk%', 'rushing_ypa']
 
+STAT_MAP = {'passing_cmp': 'p_cmp', 'passing_att': 'p_att', 'passing_yds': 'p_yds',
+            'passing_tds': 'p_tds', 'passing_ints': 'p_ints', 'defense_sk': 'p_sck',
+            'rushing_att': 'r_att', 'rushing_yds': 'r_yds', 'rushing_tds': 'r_tds',
+            'passing_cmp%': 'p_cmp%', 'passing_ypa': 'p_ypa', 'passing_ypc': 'p_ypc',
+            'passing_int%': 'p_int%', 'passing_td%': 'p_td%', 'passing_sk%': 'p_sk%',
+            'rushing_ypa': 'r_ypa'}
+
 class League:
     """
     A class that collects data using the nflgame API, then uses it to get cumulative and rate stats.
@@ -224,10 +231,10 @@ class League:
             if len(set(team) & set(self.which_team)) > 0:
                 output += '{team}\n'.format(team=team[3])
                 output += 'year'.rjust(6) + 'week'.rjust(6)
-                output += ' ' + ' '.join([(stat[0] + stat[7:]).rjust(6) for stat in which_stats])
+                output += ' ' + ' '.join([STAT_MAP[stat].rjust(6) for stat in which_stats])
                 output += 'Pts'.rjust(6) + 'oPts'.rjust(6)
                 output += 'OPP'.rjust(6)
-                output += ' '.join([(stat[0] + stat[7:]).rjust(6) for stat in which_stats]) + '\n'
+                output += ' '.join([STAT_MAP[stat].rjust(6) for stat in which_stats]) + '\n'
                 output += divider + '\n'
                 for yr in self.year:
                     for wk in self.week:
