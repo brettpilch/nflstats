@@ -28,7 +28,7 @@ usage: nflstats.py [-h] [-y YEAR] [-w WEEK] [-t TEAM] [-s SITE] [-c] [-r]
 Display NFL team stats for a given season, teams and weeks
 
 ###optional arguments  
-  *-h, --help*            show this help message and exit
+  *-h, --help*            show this help message and exit  
   *-y YEAR, --year YEAR*  Which year(s) do you want stats from? Acceptable years are between 2009 and 2015. Use '2009,2011-2013,...' for multiple years. Default value is 2013-2014  
   *-w WEEK, --week WEEK*  Which week(s) do you want to include? Acceptable weeks are between 1 and 17. Use '1-5,7,...' for multiple weeks. Defaults to include all weeks.  
   *-t TEAM, --team TEAM*  Which team(s) do you want to include? Accepts any of the common 2-3 letter abbreviations. Use 'IND,NE,...' for multiple teams. Defaults to include all teams.  

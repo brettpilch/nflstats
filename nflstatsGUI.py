@@ -34,14 +34,13 @@ def get_results(league, team, year, week, cum, rate, widget):
         thisyear = default(parse_seq(None), list(range(2009, 2015)))
     else:
         thisyear = default(parse_seq(year.get()), list(range(2009, 2015)))
-    league.batch_init(thisyear, thisweek, thisteam, cum.get(), rate.get())
+    league = League(thisyear, thisweek, thisteam, cum.get(), rate.get())
     league.compile()
     widget.delete(1.0, gui.END)
     widget.insert(gui.END, str(league))
 
 
 def runGUI():
-    league = League()
     app = gui.Tk()
     app.title("NFL Team Stats Query")
     app.geometry("1200x800+10+10")
@@ -74,7 +73,7 @@ def runGUI():
     rate_button.pack()
 
     button1 = gui.Button(app, text = 'Get Stats', width = 40,
-        command = lambda: get_results(league, team_var, year_var, week_var, cum_var, rate_var, display_text))
+        command = lambda: get_results(team_var, year_var, week_var, cum_var, rate_var, display_text))
     button1.pack()
 
     app.mainloop()

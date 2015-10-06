@@ -83,12 +83,15 @@ STAT_MAP = {'passing_cmp': 'p_cmp', 'passing_att': 'p_att',
             'passing_int%': 'p_int%', 'passing_td%': 'p_td%',
             'passing_sk%': 'p_sk%', 'rushing_ypa': 'r_ypa'}
 
-class League:
+class League(object):
     """
     A class that collects data using the nflgame API,
     then uses it to get cumulative and rate stats.
     """
-    def batch_init(self, year, week, which_team, site, cum=False, rate=False):
+    def __init__(self, year, week, which_team, site, cum=False, rate=False):
+        """
+        Tell the league which teams, years, weeks, etc. to get data for.
+        """
         self.year = year
         self.week = week
         self.which_team = which_team
@@ -102,11 +105,11 @@ class League:
         Creates a nested dictionary data structure to hold the data.
         """
         teams = {team[0]: dict() for team in ng.teams}
-        for team, teamdict in teams.items():
+        for teamdict in teams.values():
             for year in self.year:
                 yeardict = teamdict[year] = dict()
-                for wk in self.week:
-                    weekdict = yeardict[wk] = dict()
+                for week in self.week:
+                    weekdict = yeardict[week] = dict()
                     for side in ['OWN', 'OPP', 'OWN_TOTAL', 'OPP_TOTAL']:
                         weekdict[side] = defaultdict(lambda: 0)
         return teams
@@ -116,10 +119,10 @@ class League:
         Use the accumulated stats to make rate stats like yards/carry,
         yards/attempt, completion %, etc.
         """
-        for team, teamdict in self.teams.items():
-            for year, yeardict in teamdict.items():
+        for teamdict in self.teams.values():
+            for yeardict in teamdict.values():
                 weeks = 0
-                for week, weekdict in yeardict.items():
+                for weekdict in yeardict.values():
                     if weekdict['OWN']['OPP']:
                         weeks += 1
                     if self.cum:
@@ -128,25 +131,25 @@ class League:
                         for side in [own, opp]:
                             if weeks:
                                 side['ppg'] = round(side['pts'] / float(weeks), 2)
-                    for side, side_stats in weekdict.items():
+                    for side_stats in weekdict.values():
                         if side_stats['passing_cmp'] > 0:
                             side_stats['passing_cmp%'] = \
-                            round(side_stats['passing_cmp'] / 
+                            round(side_stats['passing_cmp'] /
                                   side_stats['passing_att'] * 100, 2)
                             side_stats['passing_ypa'] = \
-                            round(side_stats['passing_yds'] / 
+                            round(side_stats['passing_yds'] /
                                   side_stats['passing_att'], 2)
                             side_stats['passing_ypc'] = \
-                            round(side_stats['passing_yds'] / 
+                            round(side_stats['passing_yds'] /
                                   side_stats['passing_cmp'], 2)
                             side_stats['passing_int%'] = \
-                            round(side_stats['passing_ints'] / 
+                            round(side_stats['passing_ints'] /
                                   side_stats['passing_att'] * 100, 2)
                             side_stats['passing_td%'] = \
                             round(side_stats['passing_tds'] /
                                   side_stats['passing_att'] * 100, 2)
                             side_stats['rushing_ypa'] = \
-                            round(side_stats['rushing_yds'] / 
+                            round(side_stats['rushing_yds'] /
                                   side_stats['rushing_att'], 2)
                             side_stats['passing_sk%'] = \
                             round(side_stats['defense_sk'] /
@@ -158,8 +161,8 @@ class League:
         Add all stats from previous weeks to each weekly total
         and store in the dictionary.
         """
-        for team, teamdict in self.teams.items():
-            for year, yeardict in teamdict.items():
+        for teamdict in self.teams.values():
+            for yeardict in teamdict.values():
                 for week, thisweek in yeardict.items():
                     for stat in ALL_STATS + ['pts']:
                         if week - 1 in yeardict:
@@ -221,28 +224,28 @@ class League:
         """
         Collect all stats for a given year, week(s), team(s).
         """
-        for yr in self.year:
-            for wk in self.week:
-                games = ng.games(yr, wk)
+        for year in self.year:
+            for week in self.week:
+                games = ng.games(year, week)
                 for game in games:
                     if 'home' in self.site and game.home in self.which_team:
-                        home_team = self.teams[game.home][yr][wk]
+                        home_team = self.teams[game.home][year][week]
                         home_team['OWN']['OPP'] = game.away
                         home_team['OWN']['pts'] = game.score_home
                         home_team['OPP']['pts'] = game.score_away
                         home_team['OWN_TOTAL']['OPP'] = game.away
-                        self.add_defense_stats(game.home, yr, wk, game)
-                        self.add_passing_stats(game.home, yr, wk, game)
-                        self.add_rushing_stats(game.home, yr, wk, game)
+                        self.add_defense_stats(game.home, year, week, game)
+                        self.add_passing_stats(game.home, year, week, game)
+                        self.add_rushing_stats(game.home, year, week, game)
                     if 'away' in self.site and game.away in self.which_team:
-                        away_team = self.teams[game.away][yr][wk]
+                        away_team = self.teams[game.away][year][week]
                         away_team['OWN']['OPP'] = game.home
                         away_team['OWN']['pts'] = game.score_away
                         away_team['OPP']['pts'] = game.score_home
                         away_team['OWN_TOTAL']['OPP'] = game.home
-                        self.add_defense_stats(game.away, yr, wk, game)
-                        self.add_passing_stats(game.away, yr, wk, game)
-                        self.add_rushing_stats(game.away, yr, wk, game)
+                        self.add_defense_stats(game.away, year, week, game)
+                        self.add_passing_stats(game.away, year, week, game)
+                        self.add_rushing_stats(game.away, year, week, game)
 
     def has_stats(self, team, year, week):
         """
@@ -277,18 +280,18 @@ class League:
                 output += ' '.join([STAT_MAP[stat].rjust(6)
                                     for stat in which_stats]) + '\n'
                 output += divider + '\n'
-                for yr in self.year:
-                    for wk in self.week:
-                        if self.has_stats(team[0], yr, wk):
-                            output += str(yr).rjust(6) + str(wk).rjust(6)
-                            own_stats = self.teams[team[0]][yr][wk][mine]
-                            opp_stats = self.teams[team[0]][yr][wk][theirs]
+                for year in self.year:
+                    for week in self.week:
+                        if self.has_stats(team[0], year, week):
+                            output += str(year).rjust(6) + str(week).rjust(6)
+                            own_stats = self.teams[team[0]][year][week][mine]
+                            opp_stats = self.teams[team[0]][year][week][theirs]
                             output += ' '
                             output += ' '.join([str(own_stats[key]).rjust(6)
                                                 for key in which_stats])
                             if self.rate and self.cum:
                                 output += str(own_stats['ppg']).rjust(6)
-                                output == str(opp_stats['ppg']).rjust(6)
+                                output += str(opp_stats['ppg']).rjust(6)
                             else:
                                 output += str(own_stats['pts']).rjust(6)
                                 output += str(opp_stats['pts']).rjust(6)
@@ -312,10 +315,9 @@ def run(year, week, which_team, site, cum=False, rate=False):
     """
     Collect and print the stats for the selected team(s) and week(s).
     """
-    league = League()
-    league.batch_init(year, week, which_team, site, cum, rate)
+    league = League(year, week, which_team, site, cum, rate)
     league.compile()
-    print(league)
+    print league
 
 def parse_seq(arg_str, default_value, acceptable, integer=True):
     """
@@ -324,30 +326,33 @@ def parse_seq(arg_str, default_value, acceptable, integer=True):
     example: parse_seq('1,3-5,9') => [1,3,4,5,9]
     """
     if arg_str:
-        seq = arg_str.split(',')
-        seq = [sq.split('-') for sq in seq]
+        sequence = arg_str.split(',')
+        sequence = [hyphenated.split('-') for hyphenated in sequence]
     else:
         return default_value
-    new_seq = []
-    for sq in seq:
-        assert (len(sq) < 3 and not (len(sq) > 1 and not integer))
-        if len(sq) == 1:
+    new_sequence = []
+    for seq in sequence:
+        assert len(seq) < 3 and not (len(seq) > 1 and not integer)
+        if len(seq) == 1:
             if integer:
-                sq = int(sq[0])
+                seq = int(seq[0])
             else:
-                sq = str(sq[0])
-            new_seq.append(sq)
+                seq = str(seq[0])
+            new_sequence.append(seq)
         elif integer:
-            for i in range(int(sq[0]), int(sq[1]) + 1):
-                new_seq.append(i)
-    for item in new_seq:
+            for i in range(int(seq[0]), int(seq[1]) + 1):
+                new_sequence.append(i)
+    for item in new_sequence:
         if item not in acceptable:
             print "WARNING: {} is not an acceptable input".format(item)
             print "using default value {} instead".format(default_value)
             return default_value
-    return list(set(new_seq))
+    return list(set(new_sequence))
 
-if __name__ == '__main__':
+def main():
+    """
+    Parse the command-line arguments and run the program accordingly.
+    """
     import argparse
     parser = argparse.ArgumentParser(description="""Display NFL team
                         stats for a given season, teams and weeks""")
@@ -385,3 +390,6 @@ if __name__ == '__main__':
                      [team[0] for team in ng.teams], False)
     site = parse_seq(args.site, ['home', 'away'], ['home', 'away'], False)
     run(year, week, team, site, args.cum, args.rate)
+
+if __name__ == '__main__':
+    main()
