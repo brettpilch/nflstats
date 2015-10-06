@@ -80,10 +80,11 @@ class League:
     """
     A class that collects data using the nflgame API, then uses it to get cumulative and rate stats.
     """
-    def batch_init(self, year, week, which_team, cum=False, rate=False):
+    def batch_init(self, year, week, which_team, site, cum=False, rate=False):
         self.year = year
         self.week = week
         self.which_team = which_team
+        self.site = site
         self.cum = cum
         self.rate = rate
         self.teams = self.structure()
@@ -151,7 +152,7 @@ class League:
                             thisweek['OWN_TOTAL'][stat] = thisweek['OWN'][stat]
                             thisweek['OPP_TOTAL'][stat] = thisweek['OPP'][stat]
 
-    def add_rushing_stats(self, year, week, game):
+    def add_rushing_stats(self, team, year, week, game):
         """
         Collect all rushing stats from a certain game.
         """
@@ -164,7 +165,7 @@ class League:
                 if opp in self.which_team:
                     self.teams[opp][year][week]['OPP'][stat] += player.__dict__[stat]
 
-    def add_passing_stats(self, year, week, game):
+    def add_passing_stats(self, team, year, week, game):
         """
         Collect all passing stats from a certain game.
         """
@@ -177,14 +178,17 @@ class League:
                 if opp in self.which_team:
                     self.teams[opp][year][week]['OPP'][stat] += player.__dict__[stat]
 
-    def add_defense_stats(self, year, week, game):
+    def add_defense_stats(self, which_team, year, week, game):
+        """
+        Collect all defense stats from a certain game.
+        """
         for player in game.players.defense():
             team = player.team
             opp = game.away if game.home == team else game.home
             for stat in DEFENSE_STATS:
-                if opp in self.which_team:
+                if opp == which_team:
                     self.teams[opp][year][week]['OWN'][stat] += int(player.__dict__[stat])
-                if team in self.which_team:
+                if team == which_team:
                     self.teams[team][year][week]['OPP'][stat] += int(player.__dict__[stat])
 
     def make_team_stats(self):
@@ -195,21 +199,25 @@ class League:
             for wk in self.week:
                 games = ng.games(yr, wk)
                 for game in games:
-                    matchup = {game.home: {'opp': game.away,
-                                           'own_pts': game.score_home,
-                                           'opp_pts': game.score_away},
-                               game.away: {'opp': game.home,
-                                           'own_pts': game.score_away,
-                                           'opp_pts': game.score_home}}
-                    for team, teamdict in matchup.items():
-                        if team in self.which_team:
-                            self.teams[team][yr][wk]['OWN']['OPP'] = teamdict['opp']
-                            self.teams[team][yr][wk]['OWN']['pts'] = teamdict['own_pts']
-                            self.teams[team][yr][wk]['OPP']['pts'] = teamdict['opp_pts']
-                            self.teams[team][yr][wk]['OWN_TOTAL']['OPP'] = teamdict['opp']
-                    self.add_defense_stats(yr, wk, game)
-                    self.add_passing_stats(yr, wk, game)
-                    self.add_rushing_stats(yr, wk, game)
+                    if 'home' in self.site and game.home in self.which_team:
+                        self.teams[game.home][yr][wk]['OWN']['OPP'] = game.away
+                        self.teams[game.home][yr][wk]['OWN']['pts'] = game.score_home
+                        self.teams[game.home][yr][wk]['OPP']['pts'] = game.score_away
+                        self.teams[game.home][yr][wk]['OWN_TOTAL']['OPP'] = game.away
+                        self.add_defense_stats(game.home, yr, wk, game)
+                        self.add_passing_stats(game.home, yr, wk, game)
+                        self.add_rushing_stats(game.home, yr, wk, game)
+                    if 'away' in self.site and game.away in self.which_team:
+                        self.teams[game.away][yr][wk]['OWN']['OPP'] = game.home
+                        self.teams[game.away][yr][wk]['OWN']['pts'] = game.score_away
+                        self.teams[game.away][yr][wk]['OPP']['pts'] = game.score_home
+                        self.teams[game.away][yr][wk]['OWN_TOTAL']['OPP'] = game.home
+                        self.add_defense_stats(game.away, yr, wk, game)
+                        self.add_passing_stats(game.away, yr, wk, game)
+                        self.add_rushing_stats(game.away, yr, wk, game)
+
+    def has_stats(self, team, year, week):
+        return self.teams[team][year][week]['OWN']['passing_att'] > 0
 
     def __repr__(self):
         """
@@ -238,16 +246,17 @@ class League:
                 output += divider + '\n'
                 for yr in self.year:
                     for wk in self.week:
-                        output += str(yr).rjust(6) + str(wk).rjust(6)
-                        own_stats = self.teams[team[0]][yr][wk][mine]
-                        opp_stats = self.teams[team[0]][yr][wk][theirs]
-                        output += ' ' + ' '.join([str(own_stats[key]).rjust(6) for key in which_stats])
-                        if self.rate and self.cum:
-                            output += str(own_stats['ppg']).rjust(6) + str(opp_stats['ppg']).rjust(6)
-                        else:
-                            output += str(own_stats['pts']).rjust(6) + str(opp_stats['pts']).rjust(6)
-                        output += str(own_stats['OPP']).rjust(6)
-                        output += ' '.join([str(opp_stats[key]).rjust(6) for key in which_stats]) + '\n'
+                        if self.has_stats(team[0], yr, wk):
+                            output += str(yr).rjust(6) + str(wk).rjust(6)
+                            own_stats = self.teams[team[0]][yr][wk][mine]
+                            opp_stats = self.teams[team[0]][yr][wk][theirs]
+                            output += ' ' + ' '.join([str(own_stats[key]).rjust(6) for key in which_stats])
+                            if self.rate and self.cum:
+                                output += str(own_stats['ppg']).rjust(6) + str(opp_stats['ppg']).rjust(6)
+                            else:
+                                output += str(own_stats['pts']).rjust(6) + str(opp_stats['pts']).rjust(6)
+                            output += str(own_stats['OPP']).rjust(6)
+                            output += ' '.join([str(opp_stats[key]).rjust(6) for key in which_stats]) + '\n'
                     output += divider + '\n'
         return output
 
@@ -258,25 +267,16 @@ class League:
         if self.rate:
             self.make_rate_stats()
 
-def default(input_value, default_value):
-    """
-    If input is None, return the default_value.
-    """
-    if not input_value:
-        return default_value
-    else:
-        return input_value
-
-def run(year, week, which_team, cum=False, rate=False):
+def run(year, week, which_team, site, cum=False, rate=False):
     """
     Collect and print the stats for the selected team(s) and week(s)
     """
     league = League()
-    league.batch_init(year, week, which_team, cum, rate)
+    league.batch_init(year, week, which_team, site, cum, rate)
     league.compile()
     print(league)
 
-def parse_seq(arg_str, integer=True):
+def parse_seq(arg_str, default_value, acceptable, integer=True):
     """
     A helper function to convert comma- and hyphen-separated command-line arguments
     into a list.
@@ -286,7 +286,7 @@ def parse_seq(arg_str, integer=True):
         seq = arg_str.split(',')
         seq = [sq.split('-') for sq in seq]
     else:
-        return None
+        return default_value
     new_seq = []
     for sq in seq:
         assert (len(sq) < 3 and not (len(sq) > 1 and not integer))
@@ -294,11 +294,16 @@ def parse_seq(arg_str, integer=True):
             if integer:
                 sq = int(sq[0])
             else:
-                sq = sq[0].upper()
+                sq = str(sq[0])
             new_seq.append(sq)
         elif integer:
             for i in range(int(sq[0]), int(sq[1]) + 1):
                 new_seq.append(i)
+    for item in new_seq:
+        if item not in acceptable:
+            print "WARNING: {} is not an acceptable input".format(item)
+            print "using default value {} instead".format(default_value)
+            return default_value
     return list(set(new_seq))
 
 if __name__ == '__main__':
@@ -309,8 +314,10 @@ if __name__ == '__main__':
     parser.add_argument("-t", "--team", help="Which team(s)? Use 'IND,NE,...' for multiple teams. Omit to include all teams.")
     parser.add_argument("-c", "--cum", help="Flag to show cumulative stats instead of single-game stats.", action='store_true')
     parser.add_argument("-r", "--rate", help="Flag to show rate stats instead of gross stats.", action='store_true')
+    parser.add_argument("-s", "--site", help="Choose only home or away games")
     args = parser.parse_args()
-    year = default(parse_seq(args.year), [2013, 2014])
-    week = default(parse_seq(args.week), list(range(1, 18)))
-    team = default(parse_seq(args.team, False), list(ng.teams))
-    run(year, week, team, args.cum, args.rate)
+    year = parse_seq(args.year, [2013, 2014], list(range(2009, 2016)))
+    week = parse_seq(args.week, list(range(1, 18)), list(range(1, 18)))
+    team = parse_seq(args.team, [team[0] for team in ng.teams], [team[0] for team in ng.teams], integer = False)
+    site = parse_seq(args.site, ['home', 'away'], ['home', 'away'], integer = False)
+    run(year, week, team, site, args.cum, args.rate)
