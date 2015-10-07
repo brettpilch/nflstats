@@ -21,8 +21,9 @@ import nflgame as ng
 
 TEAMS = ["All teams"] + [team[0] for team in ng.teams]
 YEARS = ["All years"] + list(range(2009, 2016))
+WEEKS = ["All weeks"] + list(range(1, 18))
 
-def get_results(team_list, year_list, week, site, cum, rate, widget):
+def get_results(team_list, year_list, week_list, site, cum, rate, widget):
     teams_index = map(int, team_list.curselection())
     teams = [TEAMS[index] for index in teams_index]
     if "All teams" in teams:
@@ -32,10 +33,13 @@ def get_results(team_list, year_list, week, site, cum, rate, widget):
         team_str = ','.join(teams)
         thisteam = parse_seq(team_str, [team[0] for team in ng.teams],
                              [team[0] for team in ng.teams], False)
-    if week.get() == "All weeks":
+    week_index = map(int, week_list.curselection())
+    weeks = [str(WEEKS[index]) for index in week_index]
+    if "All weeks" in weeks:
         thisweek = parse_seq(None, list(range(1, 18)), list(range(1, 18)))
     else:
-        thisweek = parse_seq(week.get(), list(range(1, 18)),
+        week_str = ','.join(weeks)
+        thisweek = parse_seq(week_str, list(range(1, 18)),
                              list(range(1, 18)))
     year_index = map(int, year_list.curselection())
     years = [str(YEARS[index]) for index in year_index]
@@ -68,11 +72,7 @@ def runGUI():
 
     bottom = gui.Frame(app)
     bottom.pack()
-    
-    # team_var = gui.StringVar()
-    # team_var.set("All teams")
-    # team_entry = gui.Entry(bottom, textvariable = team_var)
-    # team_entry.pack(side = gui.LEFT)
+
     team_frame = gui.Frame(bottom)
     team_frame.pack(side = gui.LEFT)
     team_label = gui.Label(team_frame, text = "Select team(s)")
@@ -91,7 +91,7 @@ def runGUI():
     year_frame.pack(side = gui.LEFT)
     year_label = gui.Label(year_frame, text = "Select year(s)")
     year_label.pack()
-    year_list = gui.Listbox(year_frame, width = 40, height = 20,
+    year_list = gui.Listbox(year_frame, width = 20, height = 20,
                             font = ["courier new", 14],
                             selectmode = gui.MULTIPLE,
                             exportselection = 0)
@@ -100,15 +100,23 @@ def runGUI():
         year_list.insert(gui.END, str(year))
     year_list.pack()
 
-    # year_var = gui.StringVar()
-    # year_var.set("All years")
-    # year_entry = gui.Entry(bottom, textvariable = year_var)
-    # year_entry.pack(side = gui.LEFT)
+    week_frame = gui.Frame(bottom)
+    week_frame.pack(side = gui.LEFT)
+    week_label = gui.Label(week_frame, text = "Select week(s)")
+    week_label.pack()
+    week_list = gui.Listbox(week_frame, width = 20, height = 20,
+                            font = ["courier new", 14],
+                            selectmode = gui.MULTIPLE,
+                            exportselection = 0)
+    week_list.insert(gui.END, "All weeks")
+    for week in range(1, 18):
+        week_list.insert(gui.END, str(week))
+    week_list.pack()
 
-    week_var = gui.StringVar()
-    week_var.set("All weeks")
-    week_entry = gui.Entry(bottom, textvariable = week_var)
-    week_entry.pack(side = gui.LEFT)
+    # week_var = gui.StringVar()
+    # week_var.set("All weeks")
+    # week_entry = gui.Entry(bottom, textvariable = week_var)
+    # week_entry.pack(side = gui.LEFT)
 
     site_var = gui.StringVar()
     site_var.set("All sites")
@@ -126,7 +134,7 @@ def runGUI():
     rate_button.pack(side = gui.LEFT)
 
     button1 = gui.Button(app, text = 'Get Stats', width = 40,
-        command = lambda: get_results(team_list, year_list, week_var, site_var,
+        command = lambda: get_results(team_list, year_list, week_list, site_var,
                                       cum_var, rate_var, display_text))
     button1.pack()
 
