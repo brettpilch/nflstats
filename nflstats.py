@@ -230,6 +230,7 @@ class League(object):
                 for game in games:
                     if 'home' in self.site and game.home in self.which_team:
                         home_team = self.teams[game.home][year][week]
+                        home_team['OWN']['game'] = game
                         home_team['OWN']['OPP'] = game.away
                         home_team['OWN']['pts'] = game.score_home
                         home_team['OPP']['pts'] = game.score_away
@@ -239,13 +240,54 @@ class League(object):
                         self.add_rushing_stats(game.home, year, week, game)
                     if 'away' in self.site and game.away in self.which_team:
                         away_team = self.teams[game.away][year][week]
-                        away_team['OWN']['OPP'] = game.home
+                        away_team['OWN']['game'] = game
+                        away_team['OWN']['OPP'] = '@ ' + game.home
                         away_team['OWN']['pts'] = game.score_away
                         away_team['OPP']['pts'] = game.score_home
                         away_team['OWN_TOTAL']['OPP'] = game.home
                         self.add_defense_stats(game.away, year, week, game)
                         self.add_passing_stats(game.away, year, week, game)
                         self.add_rushing_stats(game.away, year, week, game)
+
+    def game_player_stats(self, team, year, week):
+        """
+        Returns a list of player stats for a given week
+        """
+        game = self.teams[team][year][week]['OWN']['game']
+        output = []
+        for side in [game.away, game.home]:
+            output.append(side + ' Passing Stats:')
+            passing_header = ''.rjust(20)
+            passing_header += ' ' + ' '.join([STAT_MAP[stat].rjust(6)
+                                              for stat in PASSING_STATS])
+            output.append(passing_header)
+            for player in game.players.passing():
+                if player.team == side:
+                    statline = str(player).rjust(20)
+                    statline += ' '.join([str(player.__dict__[stat]).rjust(6) for stat in PASSING_STATS])
+                    output.append(statline)
+            output.append(side + ' Rushing Stats:')
+            rushing_header = ''.rjust(20)
+            rushing_header += ' ' + ' '.join([STAT_MAP[stat].rjust(6)
+                                              for stat in RUSHING_STATS])
+            output.append(rushing_header)
+            for player in game.players.rushing():
+                if player.team == side:
+                    statline = str(player).rjust(20)
+                    statline += ' '.join([str(player.__dict__[stat]).rjust(6) for stat in RUSHING_STATS])
+                    output.append(statline)
+            output.append(side + ' Defense Stats:')
+            defense_header = ''.rjust(20)
+            defense_header += 'sacks'.rjust(6)
+            output.append(defense_header)
+            for player in game.players.defense():
+                if player.team == side and player.__dict__['defense_sk'] > 0:
+                    statline = str(player).rjust(20)
+                    statline += str(player.__dict__['defense_sk']).rjust(6)
+                    output.append(statline)
+        return output
+
+
 
     def has_stats(self, team, year, week):
         """
@@ -272,7 +314,7 @@ class League(object):
         for team in ng.teams:
             if team[0] in self.which_team:
                 output += '{team}\n'.format(team=team[3])
-                output += 'year'.rjust(6) + 'week'.rjust(6)
+                output += 'team'.rjust(6) + 'year'.rjust(6) + 'week'.rjust(6)
                 output += ' ' + ' '.join([STAT_MAP[stat].rjust(6)
                                           for stat in which_stats])
                 output += 'Pts'.rjust(6) + 'oPts'.rjust(6)
@@ -283,7 +325,8 @@ class League(object):
                 for year in self.year:
                     for week in self.week:
                         if self.has_stats(team[0], year, week):
-                            output += str(year).rjust(6) + str(week).rjust(6)
+                            output += str(team[0]).rjust(6) + \
+                                      str(year).rjust(6) + str(week).rjust(6)
                             own_stats = self.teams[team[0]][year][week][mine]
                             opp_stats = self.teams[team[0]][year][week][theirs]
                             output += ' '
