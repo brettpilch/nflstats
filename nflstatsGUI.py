@@ -21,7 +21,8 @@ import nflgame as ng
 
 def get_results(team, year, week, site, cum, rate, widget):
     if team.get() == "All teams":
-        thisteam = ng.teams
+        thisteam = parse_seq(None, [team[0] for team in ng.teams],
+                             [team[0] for team in ng.teams], False)
     else:
         thisteam = parse_seq(team.get(), [team[0] for team in ng.teams],
                              [team[0] for team in ng.teams], False)
@@ -41,8 +42,9 @@ def get_results(team, year, week, site, cum, rate, widget):
                              ['home', 'away'], False)
     league = League(thisyear, thisweek, thisteam, thissite, cum.get(), rate.get())
     league.compile()
-    widget.delete(1.0, gui.END)
-    widget.insert(gui.END, str(league))
+    widget.delete(0, gui.END)
+    for line in str(league).splitlines():
+        widget.insert(gui.END, str(line))
 
 
 def runGUI():
@@ -50,7 +52,8 @@ def runGUI():
     app.title("NFL Team Stats Query")
     app.geometry("1300x800+10+10")
 
-    display_text = gui.Text(app, width=200)
+    display_text = gui.Listbox(app, width = 200, height = 20,
+                               font = ["courier new", 14])
     display_text.insert(gui.END, "Select parameters below.")
     display_text.pack()
     

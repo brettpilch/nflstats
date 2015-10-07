@@ -175,7 +175,7 @@ class League(object):
                             thisweek['OWN_TOTAL'][stat] = thisweek['OWN'][stat]
                             thisweek['OPP_TOTAL'][stat] = thisweek['OPP'][stat]
 
-    def add_rushing_stats(self, team, year, week, game):
+    def add_rushing_stats(self, which_team, year, week, game):
         """
         Collect all rushing stats from a certain game.
         """
@@ -183,14 +183,14 @@ class League(object):
             team = player.team
             opp = game.away if game.home == team else game.home
             for stat in RUSHING_STATS:
-                if team in self.which_team:
+                if team == which_team:
                     self.teams[team][year][week]['OWN'][stat] += \
                     player.__dict__[stat]
-                if opp in self.which_team:
+                elif opp == which_team:
                     self.teams[opp][year][week]['OPP'][stat] += \
                     player.__dict__[stat]
 
-    def add_passing_stats(self, team, year, week, game):
+    def add_passing_stats(self, which_team, year, week, game):
         """
         Collect all passing stats from a certain game.
         """
@@ -198,10 +198,10 @@ class League(object):
             team = player.team
             opp = game.away if game.home == team else game.home
             for stat in PASSING_STATS:
-                if team in self.which_team:
+                if team == which_team:
                     self.teams[team][year][week]['OWN'][stat] += \
                     player.__dict__[stat]
-                if opp in self.which_team:
+                elif opp == which_team:
                     self.teams[opp][year][week]['OPP'][stat] += \
                     player.__dict__[stat]
 
@@ -216,7 +216,7 @@ class League(object):
                 if opp == which_team:
                     self.teams[opp][year][week]['OWN'][stat] += \
                     int(player.__dict__[stat])
-                if team == which_team:
+                elif team == which_team:
                     self.teams[team][year][week]['OPP'][stat] += \
                     int(player.__dict__[stat])
 
@@ -270,7 +270,7 @@ class League(object):
             theirs = 'OPP'
         output = ''
         for team in ng.teams:
-            if len(set(team) & set(self.which_team)) > 0:
+            if team[0] in self.which_team:
                 output += '{team}\n'.format(team=team[3])
                 output += 'year'.rjust(6) + 'week'.rjust(6)
                 output += ' ' + ' '.join([STAT_MAP[stat].rjust(6)
