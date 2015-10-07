@@ -22,8 +22,9 @@ import nflgame as ng
 TEAMS = ["All teams"] + [team[0] for team in ng.teams]
 YEARS = ["All years"] + list(range(2009, 2016))
 WEEKS = ["All weeks"] + list(range(1, 18))
+SITES = ["All sites", "home", "away"]
 
-def get_results(team_list, year_list, week_list, site, cum, rate, widget):
+def get_results(team_list, year_list, week_list, site_list, cum, rate, widget):
     teams_index = map(int, team_list.curselection())
     teams = [TEAMS[index] for index in teams_index]
     if "All teams" in teams:
@@ -48,10 +49,13 @@ def get_results(team_list, year_list, week_list, site, cum, rate, widget):
     else:
         year_str = ','.join(years)
         thisyear = parse_seq(year_str, [2013, 2014], list(range(2009, 2016)))
-    if site.get() == "All sites":
+    site_index = map(int, site_list.curselection())
+    sites = [SITES[index] for index in site_index]
+    if "All sites" in sites:
         thissite = parse_seq(None, ['home', 'away'], ['home', 'away'], False)
     else:
-        thissite = parse_seq(site.get(), ['home', 'away'],
+        site_str = ','.join(sites)
+        thissite = parse_seq(site_str, ['home', 'away'],
                              ['home', 'away'], False)
     league = League(thisyear, thisweek, thisteam, thissite, cum.get(), rate.get())
     league.compile()
@@ -77,7 +81,7 @@ def runGUI():
     team_frame.pack(side = gui.LEFT)
     team_label = gui.Label(team_frame, text = "Select team(s)")
     team_label.pack()
-    team_list = gui.Listbox(team_frame, width = 40, height = 20,
+    team_list = gui.Listbox(team_frame, width = 40, height = 10,
                             font = ["courier new", 14],
                             selectmode = gui.MULTIPLE,
                             exportselection = 0)
@@ -91,7 +95,7 @@ def runGUI():
     year_frame.pack(side = gui.LEFT)
     year_label = gui.Label(year_frame, text = "Select year(s)")
     year_label.pack()
-    year_list = gui.Listbox(year_frame, width = 20, height = 20,
+    year_list = gui.Listbox(year_frame, width = 20, height = 10,
                             font = ["courier new", 14],
                             selectmode = gui.MULTIPLE,
                             exportselection = 0)
@@ -104,7 +108,7 @@ def runGUI():
     week_frame.pack(side = gui.LEFT)
     week_label = gui.Label(week_frame, text = "Select week(s)")
     week_label.pack()
-    week_list = gui.Listbox(week_frame, width = 20, height = 20,
+    week_list = gui.Listbox(week_frame, width = 20, height = 10,
                             font = ["courier new", 14],
                             selectmode = gui.MULTIPLE,
                             exportselection = 0)
@@ -113,28 +117,32 @@ def runGUI():
         week_list.insert(gui.END, str(week))
     week_list.pack()
 
-    # week_var = gui.StringVar()
-    # week_var.set("All weeks")
-    # week_entry = gui.Entry(bottom, textvariable = week_var)
-    # week_entry.pack(side = gui.LEFT)
+    site_frame = gui.Frame(bottom)
+    site_frame.pack(side = gui.LEFT)
+    site_label = gui.Label(site_frame, text = "Select site(s)")
+    site_label.pack()
+    site_list = gui.Listbox(site_frame, width = 20, height = 10,
+                            font = ["courier new", 14],
+                            selectmode = gui.MULTIPLE,
+                            exportselection = 0)
+    for site in ["All sites", "home", "away"]:
+        site_list.insert(gui.END, site)
+    site_list.pack()
 
-    site_var = gui.StringVar()
-    site_var.set("All sites")
-    site_entry = gui.Entry(bottom, textvariable = site_var)
-    site_entry.pack(side = gui.LEFT)
-
+    checkbox_frame = gui.Frame(bottom)
+    checkbox_frame.pack(side = gui.LEFT)
     cum_var = gui.IntVar()
-    cum_button = gui.Checkbutton(bottom, text="Show Cumulative Stats", 
+    cum_button = gui.Checkbutton(checkbox_frame, text="Show Cumulative Stats", 
                                  variable=cum_var)
-    cum_button.pack(side = gui.LEFT)
+    cum_button.pack()
 
     rate_var = gui.IntVar()
-    rate_button = gui.Checkbutton(bottom, text="Show Rate Stats",
+    rate_button = gui.Checkbutton(checkbox_frame, text="Show Rate Stats",
                                   variable=rate_var)
-    rate_button.pack(side = gui.LEFT)
+    rate_button.pack()
 
     button1 = gui.Button(app, text = 'Get Stats', width = 40,
-        command = lambda: get_results(team_list, year_list, week_list, site_var,
+        command = lambda: get_results(team_list, year_list, week_list, site_list,
                                       cum_var, rate_var, display_text))
     button1.pack()
 
