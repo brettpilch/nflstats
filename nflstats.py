@@ -286,7 +286,6 @@ class League(object):
                     statline = str(player).rjust(20)
                     statline += str(player.__dict__['defense_sk']).rjust(6)
                     output.append(statline)
-        output.append('-' * 70)
         return output
 
     def game_pbp(self, team, year, week):
@@ -295,7 +294,11 @@ class League(object):
         """
         game = self.teams[team][year][week]['OWN']['game']
         plays = ng.combine_plays([game])
-        return [str(play) for play in plays]
+        return [game.nice_score(), ''] + [str(play) for play in plays]
+
+    def game_scoring_plays(self, team, year, week):
+        game = self.teams[team][year][week]['OWN']['game']
+        return [game.nice_score(), ''] + game.scores
 
 
     def has_stats(self, team, year, week):

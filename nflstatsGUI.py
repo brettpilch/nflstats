@@ -72,7 +72,7 @@ def get_results(team_list, year_list, week_list, site_list, cum, rate, widget, s
     for line in str(league).splitlines():
         widget.insert(gui.END, str(line))
 
-def game_stats(game_list, status, widget, type):
+def game_stats(game_list, status, widget, variety):
     if status.league:
         all_games = str(status.league).splitlines()
         game_index = map(int, game_list.curselection())
@@ -83,14 +83,16 @@ def game_stats(game_list, status, widget, type):
             if gamesplit[0] in TEAMS:
                 team, year, week = game.split()[:3]
                 game_obj = status.league.teams[team][int(year)][int(week)]['OWN']['game']
-                if type == 'player':
-                    player_stats = status.league.game_player_stats(team, int(year), int(week))
-                    for row in player_stats:
-                        widget.insert(gui.END, str(row))
-                elif type == 'pbp':
-                    pbp = status.league.game_pbp(team, int(year), int(week))
-                    for row in pbp:
-                        widget.insert(gui.END, str(row))
+                stats = []
+                if variety == 'player':
+                    stats = status.league.game_player_stats(team, int(year), int(week))
+                elif variety == 'pbp':
+                    stats = status.league.game_pbp(team, int(year), int(week))
+                elif variety == 'scores':
+                    stats = status.league.game_scoring_plays(team, int(year), int(week))
+                for row in stats:
+                    widget.insert(gui.END, str(row))
+                widget.insert(gui.END, '-' * 150)
 
 def runGUI():
     status = Status()
@@ -174,14 +176,19 @@ def runGUI():
                                                             status, game_info,
                                                             'player'))
     pbp_button = gui.Button(button_frame, text = 'Get Play-By-Play', width = 40,
+                            command = lambda: game_stats(league_info,
+                                                         status, game_info,
+                                                         'pbp'))
+    scores_button = gui.Button(button_frame, text = 'Get Scoring Plays', width = 40,
                                command = lambda: game_stats(league_info,
                                                             status, game_info,
-                                                            'pbp'))
+                                                            'scores'))
 
     league_info.pack()
     button_frame.pack()
     player_button.pack(side = gui.LEFT)
     pbp_button.pack(side = gui.LEFT)
+    scores_button.pack(side = gui.LEFT)
     info.pack()
     selector.pack(side = gui.LEFT)
     bottom.pack()
