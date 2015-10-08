@@ -215,10 +215,10 @@ class League(object):
             for stat in DEFENSE_STATS:
                 if opp == which_team:
                     self.teams[opp][year][week]['OWN'][stat] += \
-                    int(player.__dict__[stat])
+                    float(player.__dict__[stat])
                 elif team == which_team:
                     self.teams[team][year][week]['OPP'][stat] += \
-                    int(player.__dict__[stat])
+                    float(player.__dict__[stat])
 
     def make_team_stats(self):
         """
@@ -254,7 +254,8 @@ class League(object):
         Returns a list of player stats for a given week
         """
         game = self.teams[team][year][week]['OWN']['game']
-        output = []
+        output = ['{year} week {week} {score}'.format(
+            year = year, week = week, score = game.nice_score())]
         for side in [game.away, game.home]:
             output.append(side + ' Passing Stats:')
             passing_header = ''.rjust(20)
@@ -285,8 +286,16 @@ class League(object):
                     statline = str(player).rjust(20)
                     statline += str(player.__dict__['defense_sk']).rjust(6)
                     output.append(statline)
+        output.append('-' * 70)
         return output
 
+    def game_pbp(self, team, year, week):
+        """
+        Returns a list of all plays in a game.
+        """
+        game = self.teams[team][year][week]['OWN']['game']
+        plays = ng.combine_plays([game])
+        return [str(play) for play in plays]
 
 
     def has_stats(self, team, year, week):
