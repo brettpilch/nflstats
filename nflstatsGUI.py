@@ -106,17 +106,17 @@ def runGUI():
                                exportselection = 0)
     league_info.insert(gui.END, "Select parameters below.")
 
-    button_frame = gui.Frame(app)
-
     info = gui.Frame(app)
 
     selector = gui.Frame(info)
 
     bottom = gui.Frame(selector)
 
-    team_frame = gui.Frame(bottom)
-    team_label = gui.Label(team_frame, text = "Team")
-    team_list = gui.Listbox(team_frame, width = 5, height = 10,
+    select_left = gui.Frame(bottom)
+    select_right = gui.Frame(bottom)
+
+    team_label = gui.Label(select_left, text = "Team(s)")
+    team_list = gui.Listbox(select_left, width = 10, height = 11,
                             font = ["courier new", 14],
                             selectmode = gui.MULTIPLE,
                             exportselection = 0)
@@ -125,9 +125,9 @@ def runGUI():
     for team in ng.teams:
         team_list.insert(gui.END, team[0])
 
-    year_frame = gui.Frame(bottom)
-    year_label = gui.Label(year_frame, text = "Year")
-    year_list = gui.Listbox(year_frame, width = 5, height = 10,
+    # year_frame = gui.Frame(bottom)
+    year_label = gui.Label(select_right, text = "Year(s)")
+    year_list = gui.Listbox(select_right, width = 10, height = 7,
                             font = ["courier new", 14],
                             selectmode = gui.MULTIPLE,
                             exportselection = 0)
@@ -135,9 +135,8 @@ def runGUI():
     for year in range(2009, 2016):
         year_list.insert(gui.END, str(year))
 
-    week_frame = gui.Frame(bottom)
-    week_label = gui.Label(week_frame, text = "Week")
-    week_list = gui.Listbox(week_frame, width = 5, height = 10,
+    week_label = gui.Label(select_right, text = "Week(s)")
+    week_list = gui.Listbox(select_right, width = 10, height = 7,
                             font = ["courier new", 14],
                             selectmode = gui.MULTIPLE,
                             exportselection = 0)
@@ -145,9 +144,9 @@ def runGUI():
     for week in range(1, 18):
         week_list.insert(gui.END, str(week))
 
-    site_frame = gui.Frame(bottom)
-    site_label = gui.Label(site_frame, text = "Site")
-    site_list = gui.Listbox(site_frame, width = 5, height = 10,
+    # site_frame = gui.Frame(bottom)
+    site_label = gui.Label(select_left, text = "Site(s)")
+    site_list = gui.Listbox(select_left, width = 10, height = 3,
                             font = ["courier new", 14],
                             selectmode = gui.MULTIPLE,
                             exportselection = 0)
@@ -163,6 +162,7 @@ def runGUI():
                                   variable=rate_var)
 
     player_frame = gui.Frame(info)
+    button_frame = gui.Frame(player_frame)
     game_info = gui.Listbox(player_frame, width = 150, height = 20,
                               font = ["courier new", 14])
     game_info.insert(gui.END, "Player stats")
@@ -185,23 +185,23 @@ def runGUI():
                                                             'scores'))
 
     league_info.pack()
-    button_frame.pack()
     player_button.pack(side = gui.LEFT)
     pbp_button.pack(side = gui.LEFT)
     scores_button.pack(side = gui.LEFT)
     info.pack()
+    button_frame.pack()
     selector.pack(side = gui.LEFT)
     bottom.pack()
-    team_frame.pack(side = gui.LEFT)
+    select_left.pack(side = gui.LEFT)
     team_label.pack()
     team_list.pack()
-    year_frame.pack(side = gui.LEFT)
+    # year_frame.pack(side = gui.LEFT)
     year_label.pack()
     year_list.pack()
-    week_frame.pack(side = gui.LEFT)
+    select_right.pack(side = gui.LEFT)
     week_label.pack()
     week_list.pack()
-    site_frame.pack(side = gui.LEFT)
+    # site_frame.pack(side = gui.LEFT)
     site_label.pack()
     site_list.pack()
     cum_button.pack()
