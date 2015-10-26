@@ -71,17 +71,28 @@ PASSING_STATS = ['passing_cmp', 'passing_att', 'passing_yds', 'passing_tds',
 RUSHING_STATS = ['rushing_att', 'rushing_yds', 'rushing_tds']
 DEFENSE_STATS = ['defense_sk']
 ALL_STATS = PASSING_STATS + DEFENSE_STATS + RUSHING_STATS
+PLAYER_PASSING_STATS = PASSING_STATS[:]
+PLAYER_RUSHING_STATS = RUSHING_STATS[:] + ['rushing_lng']
+PLAYER_RECEIVING_STATS = ['receiving_rec', 'receiving_yds', 'receiving_tds', 'receiving_lng']
+PLAYER_DEFENSE_STATS = DEFENSE_STATS[:] + ['defense_tkl', 'defense_ast', 'defense_int',
+                                           'defense_ffum', 'fumbles_trcv']
 RATE_STATS = ['passing_cmp%', 'passing_ypa', 'passing_ypc',
               'passing_int%', 'passing_td%', 'passing_sk%', 'rushing_ypa']
 
 STAT_MAP = {'passing_cmp': 'p_cmp', 'passing_att': 'p_att',
             'passing_yds': 'p_yds', 'passing_tds': 'p_tds',
             'passing_ints': 'p_ints', 'defense_sk': 'p_sck',
-            'rushing_att': 'r_att', 'rushing_yds': 'r_yds',
-            'rushing_tds': 'r_tds', 'passing_cmp%': 'p_cmp%',
+            'rushing_att': 'r_att', 'rushing_yds': 'ru_yds',
+            'rushing_tds': 'ru_tds', 'passing_cmp%': 'p_cmp%',
             'passing_ypa': 'p_ypa', 'passing_ypc': 'p_ypc',
             'passing_int%': 'p_int%', 'passing_td%': 'p_td%',
-            'passing_sk%': 'p_sk%', 'rushing_ypa': 'r_ypa'}
+            'passing_sk%': 'p_sk%', 'rushing_ypa': 'r_ypa',
+            'receiving_rec': 'rec', 'receiving_yds': 're_yds',
+            'receiving_tds': 're_tds', 'rushing_lng': 'ru_lng',
+            'receiving_lng': 're_lng', 'defense_sk': 'sacks',
+            'defense_tkl': 'tckls', 'defense_int': 'd_ints',
+            'defense_ast': 'd_asts', 'defense_ffum': 'ffum',
+            'fumbles_trcv': 'frec'}
 
 class League(object):
     """
@@ -260,31 +271,46 @@ class League(object):
             output.append(side + ' Passing Stats:')
             passing_header = ''.rjust(20)
             passing_header += ' ' + ' '.join([STAT_MAP[stat].rjust(6)
-                                              for stat in PASSING_STATS])
+                                              for stat in PLAYER_PASSING_STATS])
             output.append(passing_header)
             for player in game.players.passing():
                 if player.team == side:
                     statline = str(player).rjust(20)
-                    statline += ' '.join([str(player.__dict__[stat]).rjust(6) for stat in PASSING_STATS])
+                    statline += ' '.join([str(player.__dict__[stat]).rjust(6) for stat in PLAYER_PASSING_STATS])
                     output.append(statline)
             output.append(side + ' Rushing Stats:')
             rushing_header = ''.rjust(20)
             rushing_header += ' ' + ' '.join([STAT_MAP[stat].rjust(6)
-                                              for stat in RUSHING_STATS])
+                                              for stat in PLAYER_RUSHING_STATS])
             output.append(rushing_header)
             for player in game.players.rushing():
                 if player.team == side:
                     statline = str(player).rjust(20)
-                    statline += ' '.join([str(player.__dict__[stat]).rjust(6) for stat in RUSHING_STATS])
+                    statline += ' '.join([str(player.__dict__[stat]).rjust(6) for stat in PLAYER_RUSHING_STATS])
+                    output.append(statline)
+            output.append(side + ' Receiving Stats:')
+            receiving_header = ''.rjust(20)
+            receiving_header += ' ' + ' '.join([STAT_MAP[stat].rjust(6)
+                                              for stat in PLAYER_RECEIVING_STATS])
+            output.append(receiving_header)
+            for player in game.players.receiving():
+                if player.team == side:
+                    statline = str(player).rjust(20)
+                    statline += ' '.join([str(player.__dict__[stat]).rjust(6) for stat in PLAYER_RECEIVING_STATS])
                     output.append(statline)
             output.append(side + ' Defense Stats:')
             defense_header = ''.rjust(20)
-            defense_header += 'sacks'.rjust(6)
+            defense_header += ' ' + ' '.join([STAT_MAP[stat].rjust(6)
+                                             for stat in PLAYER_DEFENSE_STATS])
             output.append(defense_header)
             for player in game.players.defense():
-                if player.team == side and player.__dict__['defense_sk'] > 0:
+                if player.team == side:
                     statline = str(player).rjust(20)
-                    statline += str(player.__dict__['defense_sk']).rjust(6)
+                    for stat in PLAYER_DEFENSE_STATS:
+                        if stat in player.__dict__:
+                            statline += ' ' + str(player.__dict__[stat]).rjust(6)
+                        else:
+                            statline += ' ' + '0'.rjust(6)
                     output.append(statline)
         return output
 
