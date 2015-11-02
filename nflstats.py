@@ -64,7 +64,10 @@ $ python nflstats.py -y 2011 -t TB,NYG
 
 from __future__ import division
 import nflgame as ng
+import nflgame.live as nl
 from collections import defaultdict
+
+CURRENT_YEAR, CURRENT_WEEK = nl.current_year_and_week()
 
 PASSING_STATS = ['passing_cmp', 'passing_att', 'passing_yds', 'passing_tds',
                  'passing_ints']
@@ -118,11 +121,13 @@ class League(object):
         teams = {team[0]: dict() for team in ng.teams}
         for teamdict in teams.values():
             for year in self.year:
-                yeardict = teamdict[year] = dict()
-                for week in self.week:
-                    weekdict = yeardict[week] = dict()
-                    for side in ['OWN', 'OPP', 'OWN_TOTAL', 'OPP_TOTAL']:
-                        weekdict[side] = defaultdict(lambda: 0)
+                if year <= CURRENT_YEAR:
+                    yeardict = teamdict[year] = dict()
+                    for week in self.week:
+                        if year < CURRENT_YEAR or week <= CURRENT_WEEK:
+                            weekdict = yeardict[week] = dict()
+                            for side in ['OWN', 'OPP', 'OWN_TOTAL', 'OPP_TOTAL']:
+                                weekdict[side] = defaultdict(lambda: 0)
         return teams
 
     def make_rate_stats(self):
@@ -237,28 +242,29 @@ class League(object):
         """
         for year in self.year:
             for week in self.week:
-                games = ng.games(year, week)
-                for game in games:
-                    if 'home' in self.site and game.home in self.which_team:
-                        home_team = self.teams[game.home][year][week]
-                        home_team['OWN']['game'] = game
-                        home_team['OWN']['OPP'] = game.away
-                        home_team['OWN']['pts'] = game.score_home
-                        home_team['OPP']['pts'] = game.score_away
-                        home_team['OWN_TOTAL']['OPP'] = game.away
-                        self.add_defense_stats(game.home, year, week, game)
-                        self.add_passing_stats(game.home, year, week, game)
-                        self.add_rushing_stats(game.home, year, week, game)
-                    if 'away' in self.site and game.away in self.which_team:
-                        away_team = self.teams[game.away][year][week]
-                        away_team['OWN']['game'] = game
-                        away_team['OWN']['OPP'] = '@ ' + game.home
-                        away_team['OWN']['pts'] = game.score_away
-                        away_team['OPP']['pts'] = game.score_home
-                        away_team['OWN_TOTAL']['OPP'] = game.home
-                        self.add_defense_stats(game.away, year, week, game)
-                        self.add_passing_stats(game.away, year, week, game)
-                        self.add_rushing_stats(game.away, year, week, game)
+                if year < CURRENT_YEAR or (year == CURRENT_YEAR and week <= CURRENT_WEEK):
+                    games = ng.games(year, week)
+                    for game in games:
+                        if 'home' in self.site and game.home in self.which_team:
+                            home_team = self.teams[game.home][year][week]
+                            home_team['OWN']['game'] = game
+                            home_team['OWN']['OPP'] = game.away
+                            home_team['OWN']['pts'] = game.score_home
+                            home_team['OPP']['pts'] = game.score_away
+                            home_team['OWN_TOTAL']['OPP'] = game.away
+                            self.add_defense_stats(game.home, year, week, game)
+                            self.add_passing_stats(game.home, year, week, game)
+                            self.add_rushing_stats(game.home, year, week, game)
+                        if 'away' in self.site and game.away in self.which_team:
+                            away_team = self.teams[game.away][year][week]
+                            away_team['OWN']['game'] = game
+                            away_team['OWN']['OPP'] = '@ ' + game.home
+                            away_team['OWN']['pts'] = game.score_away
+                            away_team['OPP']['pts'] = game.score_home
+                            away_team['OWN_TOTAL']['OPP'] = game.home
+                            self.add_defense_stats(game.away, year, week, game)
+                            self.add_passing_stats(game.away, year, week, game)
+                            self.add_rushing_stats(game.away, year, week, game)
 
     def game_player_stats(self, team, year, week):
         """
@@ -331,6 +337,10 @@ class League(object):
         """
         Return True if stats have been gathered from the given team,year,week.
         """
+        if year not in self.teams[team]:
+            return False
+        if week not in self.teams[team][year]:
+            return False
         return self.teams[team][year][week]['OWN']['passing_att'] > 0
 
     def __repr__(self):
